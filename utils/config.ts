@@ -1,5 +1,5 @@
 export const FURY_VALORANT =
-  process.env.NEXT_PUBLIC_FURY_API_BASE_URL || "https://teamfury.store";
+  process.env.NEXT_PUBLIC_FURY_API_BASE_URL || "http://localhost:3000";
 
 export const SITE_CONFIG = {
   name: "TEAM FURY",
