@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Extended transition durations */
+.duration-600  { transition-duration: 600ms;  }
+.duration-2000 { transition-duration: 2000ms; }
+
+/* ── Animations ── */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes scroll-dot {
+  0%  { transform: translateY(0);    opacity: 1; }
+  60% { transform: translateY(10px); opacity: 0; }
+  61% { transform: translateY(0);    opacity: 0; }
+  100%{ transform: translateY(0);    opacity: 1; }
+}
+@keyframes glow-pulse {
+  0%, 100% { text-shadow: 0 0 8px rgba(239,68,68,0.6), 0 0 20px rgba(239,68,68,0.3); }
+  50%       { text-shadow: 0 0 20px rgba(239,68,68,0.9), 0 0 40px rgba(239,68,68,0.5); }
+}
+
+.animate-fade-in        { animation: fade-in 0.4s ease both; }
+.animate-slide-in-right { animation: slide-in-right 0.3s ease both; }
+.animate-slide-up       { animation: slide-up 0.5s ease both; }
+.animate-scale-in       { animation: scale-in 0.3s ease both; }
+.animate-scroll-dot     { animation: scroll-dot 1.6s ease-in-out infinite; }
+.animate-glow           { animation: glow-pulse 2.5s ease-in-out infinite; }
+/* Comment */

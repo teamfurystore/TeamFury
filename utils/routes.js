@@ -1,0 +1,1 @@
+export const CURD_FURY_PRODUCT = `${NEXT_PUBLIC_FURY_API_BASE_URL}/v1/api/products`;
