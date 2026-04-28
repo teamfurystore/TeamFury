@@ -1,50 +1,50 @@
 "use client";
 
 import { WHY_CHOOSE } from "@/utils/config";
-import { useScrollReveal } from "@/hooks/useScrollReveal";
+import SplitText from "@/components/ui/SplitText";
+import ScrollReveal from "@/components/ui/ScrollReveal";
+import StaggerReveal from "@/components/ui/StaggerReveal";
 
 export default function WhyChooseSection() {
-  const { ref, visible } = useScrollReveal();
-
   return (
-    <section ref={ref} className="py-16 px-6 max-w-5xl mx-auto text-center">
-      <h2
-        className={`text-3xl font-extrabold mb-2 transition-all duration-700 ${
-          visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-        }`}
-      >
-        Why Choose <span className="text-red-500">TEAM FURY?</span>
-      </h2>
-      <p
-        className={`text-white/40 mb-12 text-sm transition-all duration-700 delay-200 ${
-          visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-        }`}
-      >
-        Trusted by thousands of Valorant players
-      </p>
+    <section className="py-20 px-6 max-w-5xl mx-auto text-center">
+      <div className="mb-14">
+        <SplitText
+          text="Why Choose TEAM FURY?"
+          tag="h2"
+          className="text-3xl md:text-4xl font-extrabold mb-3"
+          accentWords={["FURY?"]}
+          stagger={0.05}
+          duration={0.65}
+        />
+        <ScrollReveal direction="up" delay={0.2} duration={0.6}>
+          <p className="text-white/40 text-sm">Trusted by thousands of Valorant players</p>
+        </ScrollReveal>
+      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-        {WHY_CHOOSE.map((item, idx) => (
+      <StaggerReveal
+        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5"
+        stagger={0.1}
+        y={40}
+        duration={0.7}
+      >
+        {WHY_CHOOSE.map((item) => (
           <div
             key={item.title}
-            className={`bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col items-center gap-3 hover:border-red-500/40 transition-all duration-700 hover:scale-105 ${
-              visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
-            }`}
-            style={{ transitionDelay: `${300 + idx * 120}ms` }}
+            className="group relative bg-white/4 border border-white/10 rounded-2xl p-6 flex flex-col items-center gap-3 hover:border-red-500/40 hover:bg-red-500/5 transition-all duration-300 cursor-default overflow-hidden"
           >
-            <span
-              className={`text-4xl transition-all duration-500 ${
-                visible ? 'scale-100 rotate-0' : 'scale-50 rotate-12'
-              }`}
-              style={{ transitionDelay: `${400 + idx * 120}ms` }}
-            >
+            {/* top accent line */}
+            <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-red-500/0 to-transparent group-hover:via-red-500/50 transition-all duration-500" />
+            <span className="text-4xl group-hover:scale-110 transition-transform duration-300 inline-block">
               {item.icon}
             </span>
-            <h4 className="font-bold text-sm">{item.title}</h4>
-            <p className="text-white/50 text-xs leading-relaxed">{item.desc}</p>
+            <h4 className="font-bold text-sm text-white group-hover:text-red-400 transition-colors duration-300">
+              {item.title}
+            </h4>
+            <p className="text-white/45 text-xs leading-relaxed">{item.desc}</p>
           </div>
         ))}
-      </div>
+      </StaggerReveal>
     </section>
   );
 }

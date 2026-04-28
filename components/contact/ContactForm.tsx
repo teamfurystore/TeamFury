@@ -5,6 +5,8 @@ import { CONTACT_FORM_SUBJECTS } from "@/utils/contact";
 
 export default function ContactForm() {
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -21,10 +23,30 @@ export default function ContactForm() {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // TODO: wire up to your API / email service
-    setSubmitted(true);
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        throw new Error(json.error ?? "Something went wrong");
+      }
+
+      setSubmitted(true);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to send message");
+    } finally {
+      setLoading(false);
+    }
   }
 
   if (submitted) {
@@ -39,6 +61,7 @@ export default function ContactForm() {
         <button
           onClick={() => {
             setSubmitted(false);
+            setError(null);
             setForm({ name: "", email: "", phone: "", subject: "", message: "" });
           }}
           className="mt-2 text-sm text-red-400 hover:text-red-300 transition-colors"
@@ -144,10 +167,17 @@ export default function ContactForm() {
 
       <button
         type="submit"
-        className="mt-1 bg-red-600 hover:bg-red-500 text-white font-semibold py-3 rounded-full transition-colors text-sm"
+        disabled={loading}
+        className="mt-1 bg-red-600 hover:bg-red-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-full transition-colors text-sm"
       >
-        Send Message
+        {loading ? "Sending…" : "Send Message"}
       </button>
+
+      {error && (
+        <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2.5 text-center">
+          {error}
+        </p>
+      )}
     </form>
   );
 }
