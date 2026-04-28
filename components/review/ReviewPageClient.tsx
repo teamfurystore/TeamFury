@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { fetchPublicReviews } from "@/features/reviews/reviewsSlice";
 import ReviewStats from "@/components/review/ReviewStats";
 import ReviewCard from "@/components/review/ReviewCard";
 import WriteReviewForm from "@/components/review/WriteReviewForm";
@@ -8,20 +10,6 @@ import SplitText from "@/components/ui/SplitText";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import StaggerReveal from "@/components/ui/StaggerReveal";
 import GsapMarquee from "@/components/ui/GsapMarquee";
-
-interface Review {
-  id: string;
-  name: string;
-  avatar: string;
-  rating: number;
-  rank: string;
-  account_bought: string;
-  date: string;
-  review: string;
-  verified: boolean;
-  platform: "WhatsApp" | "Discord" | "Instagram" | "Direct";
-  active: boolean;
-}
 
 const MARQUEE_ITEMS = [
   "⭐ 4.9 Average Rating",
@@ -33,16 +21,10 @@ const MARQUEE_ITEMS = [
 ];
 
 export default function ReviewPageClient() {
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [loadingReviews, setLoadingReviews] = useState(true);
+  const dispatch = useAppDispatch();
+  const { list: reviews, listLoading } = useAppSelector((s) => s.reviews);
 
-  useEffect(() => {
-    fetch("/api/reviews")
-      .then((r) => r.json())
-      .then((data: Review[]) => setReviews(data))
-      .catch(() => setReviews([]))
-      .finally(() => setLoadingReviews(false));
-  }, []);
+  useEffect(() => { dispatch(fetchPublicReviews()); }, [dispatch]);
 
   return (
     <div className="bg-[#0a0a0a] text-white overflow-x-hidden">
@@ -102,7 +84,7 @@ export default function ReviewPageClient() {
             <p className="text-xs text-red-500 font-bold tracking-[0.3em] uppercase mb-1">Reviews</p>
             <h2 className="text-2xl font-extrabold">
               All Reviews{" "}
-              {!loadingReviews && (
+              {!listLoading && (
                 <span className="text-white/30 font-normal text-base">
                   ({reviews.length} shown)
                 </span>
@@ -111,7 +93,7 @@ export default function ReviewPageClient() {
           </div>
         </ScrollReveal>
 
-        {loadingReviews ? (
+        {listLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="h-52 rounded-2xl bg-white/5 border border-white/8 animate-pulse" />

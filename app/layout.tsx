@@ -9,6 +9,7 @@ import LiveViewerBadge from "@/components/ui/LiveViewerBadge";
 import PageTransition from "@/components/ui/PageTransition";
 import CursorGlow from "@/components/ui/CursorGlow";
 import TabTitleManager from "@/components/ui/TabTitleManager";
+import ReduxProvider from "@/store/ReduxProvider";
 
 const geist = Geist({
   variable: "--font-geist",
@@ -30,15 +31,16 @@ export default function RootLayout({
     <html lang="en" className={`${geist.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-[#0d0d0d] text-white">
         <CartProvider>
-          <CursorGlow />
-          <TabTitleManager />
-          <Navbar />
-          {/* <LiveViewerBadge base={14} /> */}
-          <PageTransition>
-            <main className="flex-1">{children}</main>
-          </PageTransition>
-          <Footer />
-          <FloatingWhatsApp />
+          <ReduxProvider>
+            <CursorGlow />
+            <TabTitleManager />
+            <Navbar />
+            <PageTransition>
+              <main className="flex-1">{children}</main>
+            </PageTransition>
+            <Footer />
+            <FloatingWhatsApp />
+          </ReduxProvider>
         </CartProvider>
       </body>
     </html>
