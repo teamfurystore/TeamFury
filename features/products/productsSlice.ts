@@ -1,6 +1,7 @@
-import { CURD_FURY_PRODUCT } from "@/utils/routes";
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
+
+const CURD_FURY_PRODUCT = `${process.env.NEXT_PUBLIC_FURY_API_BASE_URL || ""}/api/products`;
 
 export interface FaqDetail {
   domainName: string;
