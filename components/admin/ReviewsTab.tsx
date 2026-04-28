@@ -84,7 +84,7 @@ export default function ReviewsTab() {
       result = await dispatch(updateAdminReview({ id: editId, payload }));
     }
 
-    if (result && !result.error) {
+    if (result && !addAdminReview.rejected.match(result) && !updateAdminReview.rejected.match(result)) {
       setModal(null);
     }
   }
