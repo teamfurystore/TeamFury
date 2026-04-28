@@ -33,7 +33,7 @@ export default function RootLayout({
           <CursorGlow />
           <TabTitleManager />
           <Navbar />
-          <LiveViewerBadge base={14} />
+          {/* <LiveViewerBadge base={14} /> */}
           <PageTransition>
             <main className="flex-1">{children}</main>
           </PageTransition>
