@@ -3,7 +3,9 @@
 // Import from here — never hardcode paths in components or slices.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const BASE = process.env.NEXT_PUBLIC_FURY_API_BASE_URL || "";
+import { FURY_VALORANT } from "@/utils/config";
+
+const BASE = FURY_VALORANT || "";
 
 // ── Public ────────────────────────────────────────────────────────────────────
 

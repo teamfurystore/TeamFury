@@ -13,27 +13,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
-      {/* Top Nav */}
-      <header className="border-b border-white/10 bg-[#0f0f0f] px-6 py-4 flex items-center justify-between sticky top-0 z-50">
-        <div className="flex items-center gap-3">
-          <span className="text-xl">🛡️</span>
-          <div>
-            <span className="font-extrabold text-white tracking-tight">TEAM FURY</span>
-            <span className="ml-2 text-xs text-indigo-400 font-medium bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full">
-              Admin
-            </span>
+    <div className="min-h-screen bg-[#0f0f0f] text-white">
+
+      {/* Top bar */}
+      <header className="sticky top-0 z-40 bg-[#0f0f0f] border-b border-white/8">
+        <div className="max-w-7xl mx-auto px-5 h-14 flex items-center justify-between">
+
+          <div className="flex items-center gap-2.5">
+            <span className="text-base">🛡️</span>
+            <span className="font-semibold text-white text-sm">TEAM FURY</span>
+            <span className="text-white/20 text-xs">·</span>
+            <span className="text-xs text-white/40">Admin</span>
           </div>
+
+          <button
+            onClick={handleLogout}
+            className="text-xs text-white/40 hover:text-white/80 transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5"
+          >
+            Sign out
+          </button>
         </div>
-        <button
-          onClick={handleLogout}
-          className="text-xs text-white/40 hover:text-white/80 border border-white/10 hover:border-white/20 px-3 py-1.5 rounded-lg transition-colors"
-        >
-          Sign Out
-        </button>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">{children}</main>
+      {/* Page */}
+      <div className="max-w-7xl mx-auto px-5 py-7">
+        {children}
+      </div>
     </div>
   );
 }
