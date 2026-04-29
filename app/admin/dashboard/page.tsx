@@ -4,6 +4,7 @@ import { useState } from "react";
 import ContactsTab from "@/components/admin/ContactsTab";
 import ReviewsTab from "@/components/admin/ReviewsTab";
 import ProductsTab from "@/components/admin/ProductsTab";
+import ErrorBoundary from "@/components/ui/ErrorBoundary";
 
 const TABS = [
   { id: "contacts", label: "Contacts", icon: "📬" },
@@ -42,10 +43,22 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Tab Content */}
-      {active === "contacts" && <ContactsTab />}
-      {active === "reviews" && <ReviewsTab />}
-      {active === "products" && <ProductsTab />}
+      {/* Tab Content — each tab isolated so one crash doesn't kill the whole dashboard */}
+      {active === "contacts" && (
+        <ErrorBoundary variant="inline">
+          <ContactsTab />
+        </ErrorBoundary>
+      )}
+      {active === "reviews" && (
+        <ErrorBoundary variant="inline">
+          <ReviewsTab />
+        </ErrorBoundary>
+      )}
+      {active === "products" && (
+        <ErrorBoundary variant="inline">
+          <ProductsTab />
+        </ErrorBoundary>
+      )}
     </div>
   );
 }
