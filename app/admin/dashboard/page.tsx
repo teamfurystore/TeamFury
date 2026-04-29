@@ -7,9 +7,9 @@ import ProductsTab from "@/components/admin/ProductsTab";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
 
 const TABS = [
-  { id: "contacts", label: "Contacts", icon: "📬" },
-  { id: "reviews", label: "Reviews", icon: "⭐" },
-  { id: "products", label: "Products", icon: "🎮" },
+  { id: "contacts", label: "Contacts",  icon: "📬", desc: "Form submissions" },
+  { id: "reviews",  label: "Reviews",   icon: "⭐", desc: "Customer reviews"  },
+  { id: "products", label: "Products",  icon: "🎮", desc: "Account listings"  },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -19,46 +19,36 @@ export default function DashboardPage() {
 
   return (
     <div>
-      {/* Page Header */}
+      {/* Page title */}
       <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-white">Dashboard</h1>
-        <p className="text-sm text-white/40 mt-0.5">Manage your store data from one place</p>
+        <h1 className="text-lg font-semibold text-white">Dashboard</h1>
+        <p className="text-sm text-white/40 mt-0.5">Manage your store from one place</p>
       </div>
 
-      {/* Tab Bar */}
-      <div className="flex gap-1 bg-white/5 border border-white/10 rounded-xl p-1 w-fit mb-8">
+      {/* Tab navigation */}
+      <div className="flex gap-1 mb-6 border-b border-white/8 pb-0">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActive(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors relative -mb-px ${
               active === tab.id
-                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20"
-                : "text-white/50 hover:text-white/80"
+                ? "text-white bg-white/6 border border-b-[#0f0f0f] border-white/10"
+                : "text-white/45 hover:text-white/70 hover:bg-white/4"
             }`}
           >
-            <span>{tab.icon}</span>
+            <span className="text-base leading-none">{tab.icon}</span>
             {tab.label}
           </button>
         ))}
       </div>
 
-      {/* Tab Content — each tab isolated so one crash doesn't kill the whole dashboard */}
-      {active === "contacts" && (
-        <ErrorBoundary variant="inline">
-          <ContactsTab />
-        </ErrorBoundary>
-      )}
-      {active === "reviews" && (
-        <ErrorBoundary variant="inline">
-          <ReviewsTab />
-        </ErrorBoundary>
-      )}
-      {active === "products" && (
-        <ErrorBoundary variant="inline">
-          <ProductsTab />
-        </ErrorBoundary>
-      )}
+      {/* Tab content */}
+      <ErrorBoundary variant="inline">
+        {active === "contacts" && <ContactsTab />}
+        {active === "reviews"  && <ReviewsTab />}
+        {active === "products" && <ProductsTab />}
+      </ErrorBoundary>
     </div>
   );
 }
