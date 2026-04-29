@@ -79,7 +79,7 @@ export default function HeroHomePage() {
           className="text-white/55 text-lg max-w-xl leading-relaxed"
           initial={{ opacity: 0, y: 30 }}
           animate={loaded ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.7, delay: 0.9, ease }}
+          transition={{ duration: 0.4, delay: 0.6, ease }}
         >
           {SITE_CONFIG.description}
         </motion.p>
@@ -89,7 +89,7 @@ export default function HeroHomePage() {
           className="flex flex-wrap justify-center gap-3"
           initial={{ opacity: 0 }}
           animate={loaded ? { opacity: 1 } : {}}
-          transition={{ duration: 0.5, delay: 1.1 }}
+          transition={{ duration: 0.6, delay: 1.1 }}
         >
           {SITE_CONFIG.stats.map((s, idx) => (
             <motion.span

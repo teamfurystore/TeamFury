@@ -6,9 +6,12 @@ interface Props {
   title: string;
   onClose: () => void;
   children: React.ReactNode;
+  size?: "sm" | "md" | "lg";
 }
 
-export default function AdminModal({ title, onClose, children }: Props) {
+const sizes = { sm: "max-w-sm", md: "max-w-lg", lg: "max-w-2xl" };
+
+export default function AdminModal({ title, onClose, children, size = "md" }: Props) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", handler);
@@ -19,21 +22,29 @@ export default function AdminModal({ title, onClose, children }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
+
       {/* Panel */}
-      <div className="relative w-full max-w-lg bg-[#111] border border-white/10 rounded-2xl shadow-2xl">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-          <h2 className="font-bold text-white">{title}</h2>
+      <div className={`relative w-full ${sizes[size]} bg-[#161616] border border-white/10 rounded-2xl shadow-2xl`}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
+          <h2 className="text-sm font-semibold text-white">{title}</h2>
           <button
             onClick={onClose}
-            className="text-white/40 hover:text-white transition-colors text-xl leading-none"
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-white/40 hover:text-white hover:bg-white/8 transition-colors text-lg leading-none"
+            aria-label="Close"
           >
             ×
           </button>
         </div>
-        <div className="px-6 py-5">{children}</div>
+
+        {/* Body */}
+        <div className="px-5 py-5 max-h-[80vh] overflow-y-auto">
+          {children}
+        </div>
       </div>
     </div>
   );

@@ -1,7 +1,8 @@
+import { FURY_VALORANT } from "@/utils/config";
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-const CURD_FURY_PRODUCT = `${process.env.NEXT_PUBLIC_FURY_API_BASE_URL || ""}/api/products`;
+const CURD_FURY_PRODUCT = `${FURY_VALORANT || ""}/api/products`;
 
 export interface FaqDetail {
   domainName: string;
