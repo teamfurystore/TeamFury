@@ -10,6 +10,7 @@ import SplitText from "@/components/ui/SplitText";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import StaggerReveal from "@/components/ui/StaggerReveal";
 import GsapMarquee from "@/components/ui/GsapMarquee";
+import ErrorBoundary from "@/components/ui/ErrorBoundary";
 
 const MARQUEE_ITEMS = [
   "⭐ 4.9 Average Rating",
@@ -73,7 +74,9 @@ export default function ReviewPageClient() {
       {/* ── STATS ── */}
       <section className="max-w-5xl mx-auto px-6 py-14">
         <ScrollReveal direction="up" duration={0.8}>
-          <ReviewStats />
+          <ErrorBoundary variant="inline">
+            <ReviewStats />
+          </ErrorBoundary>
         </ScrollReveal>
       </section>
 
