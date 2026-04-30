@@ -84,9 +84,12 @@ export default function ReviewsTab() {
       result = await dispatch(updateAdminReview({ id: editId, payload }));
     }
 
-    if (result && !result.error) {
-      setModal(null);
-    }
+    console.log(result);
+    
+
+    // if (result && !result.error) {
+    //   setModal(null);
+    // }
   }
 
   function openAdd() {

@@ -44,6 +44,21 @@ export default function ProductsTab() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
 
+  //! state for image upload
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string>("");
+
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if(!file) return;
+
+    setAvatarFile(file);
+
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+  }
+
   async function load() {
     setLoading(true);
     const { data: rows } = await supabase
