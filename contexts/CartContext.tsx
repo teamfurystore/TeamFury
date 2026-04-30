@@ -3,8 +3,8 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Product } from "@/utils/products";
 
-interface CartItem extends Product {
-  quantity: number;
+// One account per product — no quantity
+export interface CartItem extends Product {
   addedAt: string;
 }
 
@@ -12,8 +12,8 @@ interface CartContextType {
   items: CartItem[];
   addToCart: (product: Product) => void;
   removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
+  isInCart: (productId: string) => boolean;
   totalItems: number;
   totalPrice: number;
   isLoading: boolean;
@@ -25,87 +25,42 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load cart from localStorage on mount
   useEffect(() => {
     try {
       const saved = localStorage.getItem("teamfury-cart");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setItems(parsed);
-      }
-    } catch (error) {
-      console.error("Failed to load cart:", error);
+      if (saved) setItems(JSON.parse(saved));
+    } catch {
+      // ignore
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  // Save cart to localStorage whenever items change
   useEffect(() => {
-    if (!isLoading) {
-      localStorage.setItem("teamfury-cart", JSON.stringify(items));
-    }
+    if (!isLoading) localStorage.setItem("teamfury-cart", JSON.stringify(items));
   }, [items, isLoading]);
 
   const addToCart = (product: Product) => {
     setItems((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
-      if (existing) {
-        return prev.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
-      return [
-        ...prev,
-        {
-          ...product,
-          quantity: 1,
-          addedAt: new Date().toISOString(),
-        },
-      ];
+      // Already in cart — no duplicates
+      if (prev.some((i) => i.id === product.id)) return prev;
+      return [...prev, { ...product, addedAt: new Date().toISOString() }];
     });
   };
 
-  const removeFromCart = (productId: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== productId));
-  };
+  const removeFromCart = (productId: string) =>
+    setItems((prev) => prev.filter((i) => i.id !== productId));
 
-  const updateQuantity = (productId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(productId);
-      return;
-    }
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === productId ? { ...item, quantity } : item
-      )
-    );
-  };
+  const clearCart = () => setItems([]);
 
-  const clearCart = () => {
-    setItems([]);
-  };
+  const isInCart = (productId: string) => items.some((i) => i.id === productId);
 
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = items.reduce(
-    (sum, item) => sum + item.discountedPrice * item.quantity,
-    0
-  );
+  const totalItems = items.length;
+  const totalPrice = items.reduce((sum, i) => sum + i.discountedPrice, 0);
 
   return (
     <CartContext.Provider
-      value={{
-        items,
-        addToCart,
-        removeFromCart,
-        updateQuantity,
-        clearCart,
-        totalItems,
-        totalPrice,
-        isLoading,
-      }}
+      value={{ items, addToCart, removeFromCart, clearCart, isInCart, totalItems, totalPrice, isLoading }}
     >
       {children}
     </CartContext.Provider>
@@ -113,9 +68,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 }
 
 export function useCart() {
-  const context = useContext(CartContext);
-  if (context === undefined) {
-    throw new Error("useCart must be used within a CartProvider");
-  }
-  return context;
+  const ctx = useContext(CartContext);
+  if (!ctx) throw new Error("useCart must be used within CartProvider");
+  return ctx;
 }
