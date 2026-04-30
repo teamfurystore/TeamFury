@@ -1,25 +1,26 @@
-import { PRODUCTS, Product } from "@/utils/products";
+import { PRODUCTS } from "@/utils/products";
 import ProductCard from "./ProductCard";
+import StaggerReveal from "@/components/ui/StaggerReveal";
 
-interface ShopGridProps {
+interface Props {
   productIds?: string[];
-  onAddToCart?: (product: Product) => void;
 }
 
-export default function ShopGrid({ productIds, onAddToCart }: ShopGridProps) {
+export default function ShopGrid({ productIds }: Props) {
   const products = productIds
     ? PRODUCTS.filter((p) => productIds.includes(p.id))
     : PRODUCTS;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+    <StaggerReveal
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
+      stagger={0.08}
+      y={30}
+      duration={0.6}
+    >
       {products.map((product) => (
-        <ProductCard
-          key={product.id}
-          product={product}
-          onAddToCart={(p) => onAddToCart?.(p)}
-        />
+        <ProductCard key={product.id} product={product} />
       ))}
-    </div>
+    </StaggerReveal>
   );
 }
