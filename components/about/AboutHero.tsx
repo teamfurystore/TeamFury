@@ -68,7 +68,7 @@ export default function AboutHero() {
                 className={`inline-block mr-5 ${i === 1 ? "text-red-500" : "text-white"}`}
                 initial={{ y: 100, opacity: 0, filter: "blur(10px)" }}
                 animate={loaded ? { y: 0, opacity: 1, filter: "blur(0px)" } : {}}
-                transition={{ duration: 0.8, delay: 0.3 + i * 0.15, ease }}
+                transition={{ duration: 0.4, delay: 0.2 + i * 0.15, ease }}
               >
                 {word}
               </motion.span>
@@ -79,7 +79,7 @@ export default function AboutHero() {
             className="text-white/50 text-lg max-w-xl leading-relaxed"
             initial={{ opacity: 0, y: 30 }}
             animate={loaded ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.7, delay: 0.75, ease }}
+            transition={{ duration: 0.3, delay: 0.4, ease }}
           >
             India&apos;s most trusted Valorant account marketplace — built by gamers, for gamers.
           </motion.p>
