@@ -1,6 +1,36 @@
 import { supabase } from "@/utils/supabaseClient";
 import { NextResponse } from "next/server";
 
+export async function PATCH(req: Request) {
+  try {
+    const data = await req.json();
+    const { id, is_active } = data;
+
+    console.log(data);
+    
+    console.log("🔄 Toggle is_active:", id, is_active);
+
+    const { data: updated, error } = await supabase
+      .from("products")
+      .update({ is_active: !is_active })
+      .eq("id", id)
+      .select();
+
+    if (error) throw error;
+
+    return NextResponse.json({
+      success: true,
+      data: updated,
+    });
+  } catch (error) {
+    console.error("❌ Toggle error:", error);
+    return NextResponse.json(
+      { error: "Toggle failed" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();

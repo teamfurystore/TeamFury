@@ -25,6 +25,7 @@ interface Product {
   level: number;
   verified: boolean;
   instant_delivery: boolean;
+  active: boolean;
   description: string;
 }
 
@@ -57,6 +58,7 @@ const EMPTY: Omit<Product, "id"> = {
   level: 0,
   verified: true,
   instant_delivery: true,
+  active: false,
   description: "",
 };
 
@@ -69,6 +71,9 @@ export default function ProductsTab() {
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   //! state for image upload
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -85,6 +90,8 @@ export default function ProductsTab() {
   };
 
   async function load() {
+    console.log("loading data..");
+
     setLoading(true);
     const { data: rows } = await supabase
       .from("products")
@@ -92,6 +99,8 @@ export default function ProductsTab() {
       .order("created_at", { ascending: false });
     setData(rows ?? []);
     setLoading(false);
+
+    console.log("Loaded products:", rows);
   }
 
   useEffect(() => {
@@ -112,6 +121,7 @@ export default function ProductsTab() {
 
   async function handleSave() {
     setSaving(true);
+    setSavingId(editId || "new");
     try {
       let imageUrl = form.image;
 
@@ -149,8 +159,9 @@ export default function ProductsTab() {
         formdata.append("file", imageFile);
       }
 
+      const method = editId ? "PUT" : "POST";
       await fetch("/api/products", {
-        method: "POST",
+        method,
         body: formdata,
       });
 
@@ -158,22 +169,46 @@ export default function ProductsTab() {
       setImageFile(null);
       setPreview("");
       setModal(null);
+      load(); // Reload data after save
     } catch (error) {
       console.error("Error saving product:", error);
       alert("Failed to save product. Please try again.");
     } finally {
       setSaving(false);
+      setSavingId(null);
     }
   }
 
   async function handleDelete() {
     if (!deleteTarget) return;
     setDeleting(true);
+    setDeletingId(deleteTarget.id);
     await supabase.from("products").delete().eq("id", deleteTarget.id);
     setData((prev) => prev.filter((r) => r.id !== deleteTarget.id));
     setDeleting(false);
+    setDeletingId(null);
     setDeleteTarget(null);
   }
+
+  async function handleToggle(row: Product) {
+    setTogglingId(row.id);
+    try {
+      console.log(row);
+
+      await fetch("/api/products", {
+        method: "PATCH",
+        body: JSON.stringify(row),
+      });
+      
+    } catch (error) {
+      console.error("Error toggling product:", error);
+    } finally {
+      setTogglingId(null);
+    }
+  }
+
+  const active = data.filter((p) => p.active).length;
+  const inactive = data.filter((p) => !p.active).length;
 
   const columns = [
     { key: "title", label: "Title" },
@@ -205,6 +240,28 @@ export default function ProductsTab() {
           <span className="text-white/20 text-xs">—</span>
         ),
     },
+
+    {
+      key: "active",
+      label: "Published",
+      render: (row: Product) => (
+        <button
+          onClick={() => handleToggle(row)}
+          disabled={togglingId === row.id || savingId === row.id}
+          title={row.active ? "Click to unpublish" : "Click to publish"}
+          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
+            row.active ? "bg-emerald-500" : "bg-white/15"
+          }`}
+        >
+          <span
+            className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+              row.active ? "translate-x-4" : "translate-x-1"
+            }`}
+          />
+        </button>
+      ),
+    },
+
     {
       key: "actions",
       label: "",
@@ -226,9 +283,19 @@ export default function ProductsTab() {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-white">Products</p>
-          <p className="text-xs text-white/40 mt-0.5">
-            {data.length} listing{data.length !== 1 ? "s" : ""}
-          </p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="text-xs text-white/40">{data.length} total</span>
+            {active > 0 && (
+              <span className="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/15 px-1.5 py-0.5 rounded-md">
+                {active} active
+              </span>
+            )}
+            {inactive > 0 && (
+              <span className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/15 px-1.5 py-0.5 rounded-md">
+                {inactive} inactive
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex gap-1.5">
           <Btn variant="ghost" onClick={load} disabled={loading}>
@@ -269,7 +336,7 @@ export default function ProductsTab() {
           description="This will permanently remove the product listing."
           onConfirm={handleDelete}
           onCancel={() => setDeleteTarget(null)}
-          loading={deleting}
+          loading={deletingId === deleteTarget.id}
         />
       )}
     </div>
@@ -467,7 +534,6 @@ function ProductForm({
 }
 
 // ── Shared ────────────────────────────────────────────────────────────────────
-
 function Field({
   label,
   children,
