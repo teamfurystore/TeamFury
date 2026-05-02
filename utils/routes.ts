@@ -30,7 +30,10 @@ export const ROUTE_ADMIN_CONTACT_DELETE = (id: string) => `${BASE}/api/contact?i
 export const ROUTE_ADMIN_REVIEWS    = `${BASE}/api/admin/reviews`;
 
 /** PATCH /api/admin/reviews?id= — update / toggle a review */
-export const ROUTE_ADMIN_REVIEW_UPDATE = (id: string) => `${BASE}/api/admin/reviews?id=${id}`;
+export const ROUTE_ADMIN_REVIEW = (id: string) => `${BASE}/api/admin/reviews?id=${id}`;
 
-/** DELETE /api/admin/reviews?id= — hard delete a review */
-export const ROUTE_ADMIN_REVIEW_DELETE = (id: string) => `${BASE}/api/admin/reviews?id=${id}`;
+/** GET — Valorant weapon skins from the public API */
+export const ROUTE_VALORANT_SKINS = "https://valorant-api.com/v1/weapons/skins";
+
+/** GET — Valorant weapons list (for gun-type filter) */
+export const ROUTE_VALORANT_WEAPONS = "https://valorant-api.com/v1/weapons";

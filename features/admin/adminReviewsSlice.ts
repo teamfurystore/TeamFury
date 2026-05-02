@@ -2,8 +2,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axiosInstance from "@/utils/axiosInstance";
 import {
   ROUTE_ADMIN_REVIEWS,
-  ROUTE_ADMIN_REVIEW_UPDATE,
-  ROUTE_ADMIN_REVIEW_DELETE,
+  ROUTE_ADMIN_REVIEW,
   ROUTE_REVIEW_SUBMIT,
 } from "@/utils/routes";
 
@@ -84,7 +83,7 @@ export const updateAdminReview = createAsyncThunk<
   async ({ id, payload }, { rejectWithValue }) => {
     try {
       const { data } = await axiosInstance.patch<{ data: AdminReview }>(
-        ROUTE_ADMIN_REVIEW_UPDATE(id),
+        ROUTE_ADMIN_REVIEW(id),
         payload
       );
       return data.data;
@@ -99,7 +98,7 @@ export const deleteAdminReview = createAsyncThunk<string, string>(
   "adminReviews/delete",
   async (id, { rejectWithValue }) => {
     try {
-      await axiosInstance.delete(ROUTE_ADMIN_REVIEW_DELETE(id));
+      await axiosInstance.delete(ROUTE_ADMIN_REVIEW(id));
       return id;
     } catch (err: any) {
       return rejectWithValue(err.response?.data?.error ?? "Delete failed");

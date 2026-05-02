@@ -3,6 +3,7 @@ import contactsReducer from "@/features/contacts/contactsSlice";
 import reviewsReducer from "@/features/reviews/reviewsSlice";
 import adminReviewsReducer from "@/features/admin/adminReviewsSlice";
 import productsReducer from "@/features/products/productsSlice";
+import skinsReducer from "@/features/valorant/skinsSlice";
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     reviews: reviewsReducer,
     adminReviews: adminReviewsReducer,
     products: productsReducer,
+    skins: skinsReducer,
   },
 });
 
