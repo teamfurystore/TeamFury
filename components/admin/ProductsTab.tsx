@@ -12,6 +12,7 @@ interface Product {
   slug: string;
   title: string;
   image: string;
+  profile_url: string;
   price: number;
   discounted_price: number;
   badge: string | null;
@@ -43,6 +44,7 @@ const EMPTY: Omit<Product, "id"> = {
   slug: "",
   title: "",
   image: "",
+  profile_url: "",
   price: 0,
   discounted_price: 0,
   badge: "",
@@ -115,41 +117,50 @@ export default function ProductsTab() {
 
       // Upload image if a file was selected
       if (imageFile) {
-        const fileExt = imageFile.name.split('.').pop();
-        const fileName = `${form.slug || 'product'}-${Date.now()}.${fileExt}`;
+        const fileExt = imageFile.name.split(".").pop();
+        const fileName = `${form.slug || "product"}-${Date.now()}.${fileExt}`;
         const filePath = `products/${fileName}`;
 
-        console.log('Would upload image:', {
+        console.log("Would upload image:", {
           fileName,
           filePath,
           fileSize: imageFile.size,
-          fileType: imageFile.type
+          fileType: imageFile.type,
         });
-
-        // Simulate getting public URL
-        imageUrl = `https://your-supabase-url.supabase.co/storage/v1/object/public/images/${filePath}`;
       }
 
-      const payload = { 
-        ...form, 
+      const payload = {
+        ...form,
         image: imageUrl,
-        badge: form.badge || null 
+        badge: form.badge || null,
       };
-      
-      console.log('Form Data to be sent to API:', payload);
-      
+
+      console.log("Form Data to be sent to API:", payload);
+
       // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      console.log('Product saved successfully (simulated)');
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      console.log("Product saved successfully (simulated)");
+
+      //! creation of form object to send to API route
+      const formdata = new FormData();
+      formdata.append("data", JSON.stringify(payload));
+      if (imageFile) {
+        formdata.append("file", imageFile);
+      }
+
+      await fetch("/api/products", {
+        method: "POST",
+        body: formdata,
+      });
 
       // Reset image states
       setImageFile(null);
-      setPreview('');
+      setPreview("");
       setModal(null);
     } catch (error) {
-      console.error('Error saving product:', error);
-      alert('Failed to save product. Please try again.');
+      console.error("Error saving product:", error);
+      alert("Failed to save product. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -413,8 +424,8 @@ function ProductForm({
         </Field>
         <Field label="Valorant profile URL">
           <input
-            value={form.image}
-            onChange={(e) => set("image", e.target.value)}
+            value={form.profile_url}
+            onChange={(e) => set("profile_url", e.target.value)}
             className={inp}
             placeholder="https://tracker.gg/valorant"
           />
