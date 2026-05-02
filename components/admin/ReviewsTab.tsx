@@ -25,6 +25,7 @@ export default function ReviewsTab() {
   const [editId, setEditId]         = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminReview | null>(null);
 
+  
   useEffect(() => {
     dispatch(fetchAdminReviews()); 
   }, []);
@@ -46,7 +47,15 @@ export default function ReviewsTab() {
   async function handleSave() {
     const payload: ReviewFormPayload = {
       ...form,
-      avatar: form.avatar || form.name.trim().split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase(),
+      avatar:
+        form.avatar ||
+        form.name
+          .trim()
+          .split(" ")
+          .map((w) => w[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase(),
     };
     let result;
     if (modal === "add") result = await dispatch(addAdminReview(payload));
@@ -70,7 +79,8 @@ export default function ReviewsTab() {
   const columns = [
     { key: "name", label: "Name" },
     {
-      key: "rating", label: "Rating",
+      key: "rating",
+      label: "Rating",
       render: (row: AdminReview) => (
         <span className="text-yellow-400 tracking-tight text-xs">
           {"★".repeat(row.rating)}{"☆".repeat(5 - row.rating)}
@@ -96,14 +106,18 @@ export default function ReviewsTab() {
       ),
     },
     {
-      key: "created_at", label: "Submitted",
+      key: "created_at",
+      label: "Submitted",
       render: (row: AdminReview) =>
         new Date(row.created_at).toLocaleDateString("en-IN", {
-          day: "numeric", month: "short", year: "numeric",
+          day: "numeric",
+          month: "short",
+          year: "numeric",
         }),
     },
     {
-      key: "actions", label: "",
+      key: "actions",
+      label: "",
       render: (row: AdminReview) => (
         <div className="flex gap-1.5">
           <Btn variant="ghost" onClick={() => openEdit(row)}>Edit</Btn>
@@ -149,10 +163,18 @@ export default function ReviewsTab() {
         </div>
       )}
 
-      <AdminTable columns={columns} data={list} loading={loading} emptyMessage="No reviews yet" />
+      <AdminTable
+        columns={columns}
+        data={list}
+        loading={loading}
+        emptyMessage="No reviews yet"
+      />
 
       {modal && (
-        <AdminModal title={modal === "add" ? "Add Review" : "Edit Review"} onClose={() => setModal(null)}>
+        <AdminModal
+          title={modal === "add" ? "Add Review" : "Edit Review"}
+          onClose={() => setModal(null)}
+        >
           <ReviewForm
             form={form}
             onChange={setForm}
@@ -175,7 +197,12 @@ export default function ReviewsTab() {
   );
 }
 
-function ReviewForm({ form, onChange, onSave, saving }: {
+function ReviewForm({
+  form,
+  onChange,
+  onSave,
+  saving,
+}: {
   form: ReviewFormPayload;
   onChange: (f: ReviewFormPayload) => void;
   onSave: () => void;
@@ -200,8 +227,14 @@ function ReviewForm({ form, onChange, onSave, saving }: {
           <input value={form.rank} onChange={(e) => set("rank", e.target.value)} className={inp} placeholder="Diamond" />
         </Field>
         <Field label="Platform">
-          <select value={form.platform} onChange={(e) => set("platform", e.target.value)} className={sel}>
-            {["WhatsApp","Discord","Instagram","Direct"].map((p) => <option key={p}>{p}</option>)}
+          <select
+            value={form.platform}
+            onChange={(e) => set("platform", e.target.value)}
+            className={sel}
+          >
+            {["WhatsApp", "Discord", "Instagram", "Direct"].map((p) => (
+              <option key={p}>{p}</option>
+            ))}
           </select>
         </Field>
       </div>
