@@ -2,8 +2,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axiosInstance from "@/utils/axiosInstance";
 import {
   ROUTE_ADMIN_REVIEWS,
-  ROUTE_ADMIN_REVIEW_UPDATE,
-  ROUTE_ADMIN_REVIEW_DELETE,
+  ROUTE_ADMIN_REVIEW,
   ROUTE_REVIEW_SUBMIT,
 } from "@/utils/routes";
 
@@ -30,7 +29,7 @@ interface AdminReviewsState {
   list: AdminReview[];
   loading: boolean;
   error: string | null;
-  savingId: string | null;   // id being patched, or "new" when adding
+  savingId: string | null;   // "new" when adding, id when editing
   deletingId: string | null;
   togglingId: string | null;
 }
@@ -44,38 +43,47 @@ const initialState: AdminReviewsState = {
   togglingId: null,
 };
 
+// ── Helper — extract error message from axios error ───────────────────────────
+function extractError(err: unknown, fallback: string): string {
+  if (err && typeof err === "object" && "response" in err) {
+    const res = (err as { response?: { data?: { error?: string } } }).response;
+    return res?.data?.error ?? fallback;
+  }
+  return fallback;
+}
+
 // ── Thunks ────────────────────────────────────────────────────────────────────
 
-/** Admin — fetch ALL reviews (active + pending) */
+/** Fetch ALL reviews (active + pending) */
 export const fetchAdminReviews = createAsyncThunk<AdminReview[]>(
   "adminReviews/fetchAll",
   async (_, { rejectWithValue }) => {
     try {
       const { data } = await axiosInstance.get<AdminReview[]>(ROUTE_ADMIN_REVIEWS);
       return data;
-    } catch (err: any) {
-      return rejectWithValue(err.response?.data?.error ?? "Failed to load reviews");
+    } catch (err) {
+      return rejectWithValue(extractError(err, "Failed to load reviews"));
     }
   }
 );
 
-/** Admin — add a new review via the public POST endpoint */
+/** Add a new review via the public POST endpoint */
 export const addAdminReview = createAsyncThunk<AdminReview, ReviewFormPayload>(
   "adminReviews/add",
   async (payload, { rejectWithValue }) => {
     try {
-      const { data } = await axiosInstance.post<{ data: AdminReview }>(
+      const { data } = await axiosInstance.post<{ success: boolean; data: AdminReview }>(
         ROUTE_REVIEW_SUBMIT,
         payload
       );
       return data.data;
-    } catch (err: any) {
-      return rejectWithValue(err.response?.data?.error ?? "Save failed");
+    } catch (err) {
+      return rejectWithValue(extractError(err, "Failed to add review"));
     }
   }
 );
 
-/** Admin — update any fields on a review (including active toggle) */
+/** Update any fields on a review — used for toggle active AND full edits */
 export const updateAdminReview = createAsyncThunk<
   AdminReview,
   { id: string; payload: Partial<ReviewFormPayload> }
@@ -83,26 +91,26 @@ export const updateAdminReview = createAsyncThunk<
   "adminReviews/update",
   async ({ id, payload }, { rejectWithValue }) => {
     try {
-      const { data } = await axiosInstance.patch<{ data: AdminReview }>(
-        ROUTE_ADMIN_REVIEW_UPDATE(id),
+      const { data } = await axiosInstance.patch<{ success: boolean; data: AdminReview }>(
+        ROUTE_ADMIN_REVIEW(id),
         payload
       );
       return data.data;
-    } catch (err: any) {
-      return rejectWithValue(err.response?.data?.error ?? "Update failed");
+    } catch (err) {
+      return rejectWithValue(extractError(err, "Failed to update review"));
     }
   }
 );
 
-/** Admin — hard delete a review */
+/** Hard delete a review */
 export const deleteAdminReview = createAsyncThunk<string, string>(
   "adminReviews/delete",
   async (id, { rejectWithValue }) => {
     try {
-      await axiosInstance.delete(ROUTE_ADMIN_REVIEW_DELETE(id));
+      await axiosInstance.delete(ROUTE_ADMIN_REVIEW(id));
       return id;
-    } catch (err: any) {
-      return rejectWithValue(err.response?.data?.error ?? "Delete failed");
+    } catch (err) {
+      return rejectWithValue(extractError(err, "Failed to delete review"));
     }
   }
 );
@@ -113,8 +121,10 @@ const adminReviewsSlice = createSlice({
   name: "adminReviews",
   initialState,
   reducers: {
-    clearError(state) { state.error = null; },
-    // Optimistic toggle — flip active immediately, revert on rejection
+    clearError(state) {
+      state.error = null;
+    },
+    /** Flip active immediately in UI — revert if the PATCH fails */
     optimisticToggle(state, action: { payload: string }) {
       const r = state.list.find((r) => r.id === action.payload);
       if (r) r.active = !r.active;
@@ -125,7 +135,8 @@ const adminReviewsSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // fetchAdminReviews
+
+    // ── fetchAdminReviews ────────────────────────────────────────────────────
     builder
       .addCase(fetchAdminReviews.pending, (state) => {
         state.loading = true;
@@ -140,9 +151,12 @@ const adminReviewsSlice = createSlice({
         state.error = action.payload as string;
       });
 
-    // addAdminReview
+    // ── addAdminReview ───────────────────────────────────────────────────────
     builder
-      .addCase(addAdminReview.pending, (state) => { state.savingId = "new"; })
+      .addCase(addAdminReview.pending, (state) => {
+        state.savingId = "new";
+        state.error = null;
+      })
       .addCase(addAdminReview.fulfilled, (state, action) => {
         state.savingId = null;
         if (action.payload) state.list.unshift(action.payload);
@@ -152,10 +166,11 @@ const adminReviewsSlice = createSlice({
         state.error = action.payload as string;
       });
 
-    // updateAdminReview
+    // ── updateAdminReview ────────────────────────────────────────────────────
     builder
       .addCase(updateAdminReview.pending, (state, action) => {
         state.savingId = action.meta.arg.id;
+        state.error = null;
       })
       .addCase(updateAdminReview.fulfilled, (state, action) => {
         state.savingId = null;
@@ -169,7 +184,7 @@ const adminReviewsSlice = createSlice({
         state.error = action.payload as string;
       });
 
-    // deleteAdminReview
+    // ── deleteAdminReview ────────────────────────────────────────────────────
     builder
       .addCase(deleteAdminReview.pending, (state, action) => {
         state.deletingId = action.meta.arg;
@@ -182,6 +197,7 @@ const adminReviewsSlice = createSlice({
       .addCase(deleteAdminReview.rejected, (state, action) => {
         state.deletingId = null;
         state.error = action.payload as string;
+        // Note: on delete failure, re-fetch to restore the removed item
       });
   },
 });

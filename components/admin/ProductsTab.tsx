@@ -2,9 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabaseClient";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { toggleProductActive } from "@/features/admin/adminProductsSlice";
+import { selectSavedSkins } from "@/features/valorant/skinsSlice";
 import AdminTable from "./AdminTable";
 import AdminModal from "./AdminModal";
 import DeleteConfirm from "./DeleteConfirm";
+import SkinPickerPopup from "@/components/shop/SkinPickerPopup";
 import { type Rank } from "@/utils/products";
 
 interface Product {
@@ -63,6 +67,10 @@ const EMPTY: Omit<Product, "id"> = {
 };
 
 export default function ProductsTab() {
+  const dispatch = useAppDispatch();
+  const { togglingId } = useAppSelector((s) => s.adminProducts);
+  const savedSelections = useAppSelector((s) => s.skins.savedSelections);
+
   const [data, setData] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<"add" | "edit" | null>(null);
@@ -70,37 +78,26 @@ export default function ProductsTab() {
   const [editId, setEditId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
-  const [deleting, setDeleting] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [skinsTarget, setSkinsTarget] = useState<Product | null>(null);
 
-  //! state for image upload
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string>("");
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setImageFile(file);
-
-    const url = URL.createObjectURL(file);
-    setPreview(url);
   };
 
   async function load() {
-    console.log("loading data..");
-
     setLoading(true);
     const { data: rows } = await supabase
       .from("products")
-      .select("*")
+      .select("*, active:is_active")
       .order("created_at", { ascending: false });
     setData(rows ?? []);
     setLoading(false);
-
-    console.log("Loaded products:", rows);
   }
 
   useEffect(() => {
@@ -125,51 +122,26 @@ export default function ProductsTab() {
     try {
       let imageUrl = form.image;
 
-      // Upload image if a file was selected
       if (imageFile) {
         const fileExt = imageFile.name.split(".").pop();
         const fileName = `${form.slug || "product"}-${Date.now()}.${fileExt}`;
         const filePath = `products/${fileName}`;
-
-        console.log("Would upload image:", {
-          fileName,
-          filePath,
-          fileSize: imageFile.size,
-          fileType: imageFile.type,
-        });
+        // image upload handled by the API route
+        void filePath;
       }
 
-      const payload = {
-        ...form,
-        image: imageUrl,
-        badge: form.badge || null,
-      };
+      const payload = { ...form, image: imageUrl, badge: form.badge || null };
 
-      console.log("Form Data to be sent to API:", payload);
-
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      console.log("Product saved successfully (simulated)");
-
-      //! creation of form object to send to API route
       const formdata = new FormData();
       formdata.append("data", JSON.stringify(payload));
-      if (imageFile) {
-        formdata.append("file", imageFile);
-      }
+      if (imageFile) formdata.append("file", imageFile);
 
       const method = editId ? "PUT" : "POST";
-      await fetch("/api/products", {
-        method,
-        body: formdata,
-      });
+      await fetch("/api/products", { method, body: formdata });
 
-      // Reset image states
       setImageFile(null);
-      setPreview("");
       setModal(null);
-      load(); // Reload data after save
+      load();
     } catch (error) {
       console.error("Error saving product:", error);
       alert("Failed to save product. Please try again.");
@@ -181,29 +153,28 @@ export default function ProductsTab() {
 
   async function handleDelete() {
     if (!deleteTarget) return;
-    setDeleting(true);
     setDeletingId(deleteTarget.id);
     await supabase.from("products").delete().eq("id", deleteTarget.id);
     setData((prev) => prev.filter((r) => r.id !== deleteTarget.id));
-    setDeleting(false);
     setDeletingId(null);
     setDeleteTarget(null);
   }
 
   async function handleToggle(row: Product) {
-    setTogglingId(row.id);
-    try {
-      console.log(row);
+    // Optimistic update
+    setData((prev) =>
+      prev.map((p) => (p.id === row.id ? { ...p, active: !p.active } : p))
+    );
 
-      await fetch("/api/products", {
-        method: "PATCH",
-        body: JSON.stringify(row),
-      });
-      
-    } catch (error) {
-      console.error("Error toggling product:", error);
-    } finally {
-      setTogglingId(null);
+    const result = await dispatch(
+      toggleProductActive({ id: row.id, currentActive: row.active })
+    );
+
+    // Revert on failure
+    if (toggleProductActive.rejected.match(result)) {
+      setData((prev) =>
+        prev.map((p) => (p.id === row.id ? { ...p, active: row.active } : p))
+      );
     }
   }
 
@@ -265,16 +236,30 @@ export default function ProductsTab() {
     {
       key: "actions",
       label: "",
-      render: (row: Product) => (
-        <div className="flex gap-1.5">
-          <Btn variant="ghost" onClick={() => openEdit(row)}>
-            Edit
-          </Btn>
-          <Btn variant="danger" onClick={() => setDeleteTarget(row)}>
-            Delete
-          </Btn>
-        </div>
-      ),
+      render: (row: Product) => {
+        const savedCount = selectSavedSkins(savedSelections, row.id).length;
+        return (
+          <div className="flex gap-1.5">
+            <button
+              onClick={() => setSkinsTarget(row)}
+              className="relative text-xs font-medium px-3 py-1.5 rounded-lg transition-colors text-violet-400 hover:text-violet-300 border border-violet-500/20 hover:border-violet-500/40 hover:bg-violet-500/5"
+            >
+              🎨 Skins
+              {savedCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-4.5 h-4.5 flex items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white px-1 leading-none">
+                  {savedCount}
+                </span>
+              )}
+            </button>
+            <Btn variant="ghost" onClick={() => openEdit(row)}>
+              Edit
+            </Btn>
+            <Btn variant="danger" onClick={() => setDeleteTarget(row)}>
+              Delete
+            </Btn>
+          </div>
+        );
+      },
     },
   ];
 
@@ -337,6 +322,14 @@ export default function ProductsTab() {
           onConfirm={handleDelete}
           onCancel={() => setDeleteTarget(null)}
           loading={deletingId === deleteTarget.id}
+        />
+      )}
+
+      {skinsTarget && (
+        <SkinPickerPopup
+          productId={skinsTarget.id}
+          productName={skinsTarget.title}
+          onClose={() => setSkinsTarget(null)}
         />
       )}
     </div>
