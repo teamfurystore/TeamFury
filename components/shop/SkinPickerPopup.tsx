@@ -6,6 +6,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   fetchValorantSkins,
   saveSelection,
+  saveProductSkins,
   selectWeaponNames,
   selectSavedSkins,
   type SelectedSkin,
@@ -88,7 +89,7 @@ interface Props {
 
 export default function SkinPickerPopup({ productId, productName, onClose }: Props) {
   const dispatch = useAppDispatch();
-  const { skins, loading, error } = useAppSelector((s) => s.skins);
+  const { skins, loading, error, savingProductId } = useAppSelector((s) => s.skins);
   const savedSelections = useAppSelector((s) => s.skins.savedSelections);
 
   // Local draft — only committed to Redux on "Save"
@@ -143,8 +144,7 @@ export default function SkinPickerPopup({ productId, productName, onClose }: Pro
         {
           uuid: skin.uuid,
           displayName: skin.displayName,
-          displayIcon:
-            skin.displayIcon ??
+          displayIcon: skin.displayIcon ??
             skin.levels[0]?.displayIcon ??
             skin.chromas[0]?.fullRender ??
             null,
@@ -153,10 +153,26 @@ export default function SkinPickerPopup({ productId, productName, onClose }: Pro
     }
   }
 
-  function handleSave() {
+  async function handleSave() {
+    // 1. Save to Redux local state immediately
     dispatch(saveSelection({ productId, skins: draft }));
+
+    // 2. Persist to DB via the slice thunk
+    await dispatch(
+      saveProductSkins({
+        parent_product_id: productId,
+        items: draft.map((s) => ({
+          skin_id: s.uuid,
+          display_name: s.displayName,
+          display_icon: s.displayIcon,
+        })),
+      })
+    );
+
     onClose();
   }
+
+  const isSaving = savingProductId === productId;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -310,9 +326,10 @@ export default function SkinPickerPopup({ productId, productName, onClose }: Pro
             )}
             <button
               onClick={handleSave}
-              className="text-sm font-semibold text-white bg-red-600 hover:bg-red-500 px-5 py-2 rounded-xl transition-colors active:scale-95"
+              disabled={isSaving}
+              className="text-sm font-semibold text-white bg-red-600 hover:bg-red-500 disabled:opacity-60 disabled:cursor-not-allowed px-5 py-2 rounded-xl transition-colors active:scale-95"
             >
-              Save{draft.length > 0 ? ` (${draft.length})` : ""}
+              {isSaving ? "Saving…" : `Save${draft.length > 0 ? ` (${draft.length})` : ""}`}
             </button>
           </div>
         </div>

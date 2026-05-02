@@ -1,6 +1,11 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-import { ROUTE_VALORANT_SKINS, ROUTE_VALORANT_WEAPONS } from "@/utils/routes";
+import axiosInstance from "@/utils/axiosInstance";
+import {
+  ROUTE_VALORANT_SKINS,
+  ROUTE_VALORANT_WEAPONS,
+  ROUTE_ADMIN_PRODUCT_SKINS,
+} from "@/utils/routes";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -48,6 +53,9 @@ interface SkinsState {
   error: string | null;
   /** Per-product saved selections: productId → SelectedSkin[] */
   savedSelections: Record<string, SelectedSkin[]>;
+  /** Product id currently being saved to DB */
+  savingProductId: string | null;
+  saveError: string | null;
 }
 
 const initialState: SkinsState = {
@@ -56,6 +64,8 @@ const initialState: SkinsState = {
   loading: false,
   error: null,
   savedSelections: {},
+  savingProductId: null,
+  saveError: null,
 };
 
 // ── Thunks ────────────────────────────────────────────────────────────────────
@@ -107,8 +117,41 @@ export const fetchValorantSkins = createAsyncThunk<
   }
 });
 
-// ── Slice ─────────────────────────────────────────────────────────────────────
+// ── Thunk: persist skin selection to the DB ───────────────────────────────────
 
+export interface ProductSkinsPayload {
+  parent_product_id: string;
+  items: Array<{
+    skin_id: string;
+    display_name: string;
+    display_icon: string | null;
+  }>;
+}
+
+/**
+ * Saves the selected skins for a product to the database.
+ * Body shape: { parent_id: "123", skins: [{ uuid, display_name, display_icon }] }
+ */
+export const saveProductSkins = createAsyncThunk<
+  ProductSkinsPayload,
+  ProductSkinsPayload
+>(
+  "skins/saveProductSkins",
+  async (payload, { rejectWithValue }) => {
+    try {
+      await axiosInstance.post(ROUTE_ADMIN_PRODUCT_SKINS, payload);
+      return payload;
+    } catch (err: unknown) {
+      const msg =
+        axios.isAxiosError(err)
+          ? err.response?.data?.error ?? err.message
+          : "Failed to save skins";
+      return rejectWithValue(msg);
+    }
+  }
+);
+
+// ── Slice ─────────────────────────────────────────────────────────────────────
 const skinsSlice = createSlice({
   name: "skins",
   initialState,
