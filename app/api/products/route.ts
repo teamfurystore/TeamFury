@@ -2,6 +2,9 @@ import { supabase } from "@/utils/supabaseClient";
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 
+// Give sharp enough time to process large images
+export const maxDuration = 30;
+
 // ── Image processing ──────────────────────────────────────────────────────────
 // Converts any uploaded image to WebP, resizes to max 1080px wide while
 // preserving aspect ratio (never upscales), quality 82.
@@ -15,18 +18,23 @@ async function processImage(file: File): Promise<{ buffer: Buffer; fileName: str
   return { buffer, fileName: `products/${Date.now()}.webp` };
 }
 
+function errorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (err && typeof err === "object" && "message" in err)
+    return String((err as { message: unknown }).message);
+  return String(err);
+}
+
 // ── PATCH /api/products — toggle is_active ────────────────────────────────────
 
 export async function PATCH(req: Request) {
   try {
     const { id, is_active } = await req.json();
-
     const { data, error } = await supabase
       .from("products")
       .update({ is_active: !is_active })
       .eq("id", id)
       .select();
-
     if (error) throw error;
     return NextResponse.json({ success: true, data });
   } catch (err) {
@@ -62,7 +70,7 @@ export async function POST(req: Request) {
         .from("Thumbnails")
         .upload(fileName, buffer, { contentType: "image/webp", upsert: false });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`);
 
       const { data: urlData } = supabase.storage
         .from("Thumbnails")
@@ -94,7 +102,7 @@ export async function POST(req: Request) {
       }])
       .select();
 
-    if (error) throw error;
+    if (error) throw new Error(`DB insert failed: ${error.message}`);
 
     return NextResponse.json(
       { success: true, message: "Image uploaded & product saved", imageUrl, data: insertedData },
@@ -103,7 +111,7 @@ export async function POST(req: Request) {
   } catch (err) {
     console.error("POST /api/products error:", err);
     return NextResponse.json(
-      { success: false, message: "Upload failed", error: String(err) },
+      { success: false, message: "Upload failed", error: errorMessage(err) },
       { status: 500 }
     );
   }
