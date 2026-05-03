@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   fetchAdminReviews, addAdminReview, updateAdminReview,
@@ -34,12 +35,20 @@ export default function ReviewsTab() {
     const result = await dispatch(updateAdminReview({ id: row.id, payload: { active: !row.active } }));
     if (updateAdminReview.rejected.match(result)) {
       dispatch(revertToggle({ id: row.id, original: row.active }));
+      toast.error("Failed to update publish status");
+    } else {
+      toast.success(row.active ? `"${row.name}" unpublished` : `"${row.name}" published`);
     }
   }
 
   async function handleDelete() {
     if (!deleteTarget) return;
-    await dispatch(deleteAdminReview(deleteTarget.id));
+    const result = await dispatch(deleteAdminReview(deleteTarget.id));
+    if (deleteAdminReview.fulfilled.match(result)) {
+      toast.success(`Review by "${deleteTarget.name}" deleted`);
+    } else {
+      toast.error("Failed to delete review");
+    }
     setDeleteTarget(null);
   }
 
@@ -48,19 +57,16 @@ export default function ReviewsTab() {
       ...form,
       avatar:
         form.avatar ||
-        form.name
-          .trim()
-          .split(" ")
-          .map((w) => w[0])
-          .join("")
-          .slice(0, 2)
-          .toUpperCase(),
+        form.name.trim().split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase(),
     };
     let result;
     if (modal === "add") result = await dispatch(addAdminReview(payload));
     else if (editId)     result = await dispatch(updateAdminReview({ id: editId, payload }));
     if (result && !addAdminReview.rejected.match(result) && !updateAdminReview.rejected.match(result)) {
+      toast.success(modal === "add" ? "Review added" : "Review updated");
       setModal(null);
+    } else {
+      toast.error("Failed to save review");
     }
   }
 

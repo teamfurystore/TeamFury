@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Toaster } from "sonner";
 import { supabase } from "@/utils/supabaseClient";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -14,6 +15,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-[#0f0f0f] text-white">
+
+      {/* Toast notifications */}
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: "#1a1a1a",
+            border: "1px solid rgba(255,255,255,0.1)",
+            color: "#fff",
+            fontSize: "13px",
+            borderRadius: "12px",
+          },
+        }}
+      />
 
       {/* Top bar */}
       <header className="sticky top-0 z-40 bg-[#0f0f0f] border-b border-white/8">

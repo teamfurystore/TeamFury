@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { toggleProductActive } from "@/features/admin/adminProductsSlice";
 import { selectSavedSkins, seedSelections, type SelectedSkin } from "@/features/valorant/skinsSlice";
@@ -43,20 +44,40 @@ interface Product {
   product_items: ProductItem[];
 }
 
+// Form state allows empty string for numeric fields so the input can be blank.
+// On save, empty strings are coerced to 0.
+type NumericField = "price" | "discounted_price" | "skins" | "knives" | "battle_passes" | "level";
+type FormState = Omit<Product, "id" | NumericField> & {
+  [K in NumericField]: number | "";
+};
+
 const RANKS: Rank[] = [
   "Iron", "Bronze", "Silver", "Gold", "Platinum",
   "Diamond", "Ascendant", "Immortal", "Radiant",
 ];
 
-const EMPTY: Omit<Product, "id"> = {
+const EMPTY: FormState = {
   slug: "", title: "", image: "", profile_url: "",
-  price: 0, discounted_price: 0, badge: "",
+  price: "", discounted_price: "", badge: "",
   current_rank: "Gold", peak_rank: "Gold",
-  skins: 0, knives: 0, battle_passes: 0,
-  region: "India", level: 0,
+  skins: "", knives: "", battle_passes: "",
+  region: "India", level: "",
   verified: true, instant_delivery: true, active: false,
   description: "", product_items: [],
 };
+
+/** Coerce FormState → Product payload (empty strings become 0) */
+function coerceForm(f: FormState): Omit<Product, "id"> {
+  return {
+    ...f,
+    price: Number(f.price) || 0,
+    discounted_price: Number(f.discounted_price) || 0,
+    skins: Number(f.skins) || 0,
+    knives: Number(f.knives) || 0,
+    battle_passes: Number(f.battle_passes) || 0,
+    level: Number(f.level) || 0,
+  };
+}
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -68,7 +89,7 @@ export default function ProductsTab() {
   const [data, setData] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<"add" | "edit" | null>(null);
-  const [form, setForm] = useState<Omit<Product, "id">>(EMPTY);
+  const [form, setForm] = useState<FormState>(EMPTY);
   const [editId, setEditId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
@@ -128,10 +149,19 @@ export default function ProductsTab() {
 
   function openEdit(row: Product) {
     const { id, ...rest } = row;
-    setForm(rest);
+    // Convert 0 → "" so numeric fields appear blank in the form
+    setForm({
+      ...rest,
+      price: rest.price || "",
+      discounted_price: rest.discounted_price || "",
+      skins: rest.skins || "",
+      knives: rest.knives || "",
+      battle_passes: rest.battle_passes || "",
+      level: rest.level || "",
+    });
     setEditId(id);
-    setImageFile(null);           // no new file selected yet
-    setImagePreview(row.image);   // show the existing thumbnail
+    setImageFile(null);
+    setImagePreview(row.image);
     setModal("edit");
   }
 
@@ -147,7 +177,7 @@ export default function ProductsTab() {
     setSaving(true);
     setSavingId(editId ?? "new");
     try {
-      const payload = { ...form, badge: form.badge || null };
+    const payload = { ...coerceForm(form), badge: form.badge || null };
       const formdata = new FormData();
 
       if (editId) {
@@ -156,8 +186,8 @@ export default function ProductsTab() {
         if (imageFile) formdata.append("file", imageFile);
         // If no new file, the existing image URL is already in payload.image
 
-        const res = await fetch(ROUTE_ADMIN_PRODUCTS, {
-          method: "PUT",
+        const res = await fetch(editId ? ROUTE_ADMIN_PRODUCTS : "/api/products", {
+          method: editId ? "PUT" : "POST",
           body: formdata,
           credentials: "include",
         });
@@ -180,9 +210,10 @@ export default function ProductsTab() {
 
       closeModal();
       load();
+      toast.success(editId ? "Product updated successfully" : "Product created successfully");
     } catch (error) {
       console.error("Error saving product:", error);
-      alert("Failed to save product. Please try again.");
+      toast.error("Failed to save product. Please try again.");
     } finally {
       setSaving(false);
       setSavingId(null);
@@ -194,11 +225,16 @@ export default function ProductsTab() {
   async function handleDelete() {
     if (!deleteTarget) return;
     setDeletingId(deleteTarget.id);
-    await fetch(ROUTE_ADMIN_PRODUCT_DELETE(deleteTarget.id), {
+    const res = await fetch(ROUTE_ADMIN_PRODUCT_DELETE(deleteTarget.id), {
       method: "DELETE",
       credentials: "include",
     });
-    setData((prev) => prev.filter((r) => r.id !== deleteTarget.id));
+    if (res.ok) {
+      setData((prev) => prev.filter((r) => r.id !== deleteTarget.id));
+      toast.success(`"${deleteTarget.title}" deleted`);
+    } else {
+      toast.error("Failed to delete product");
+    }
     setDeletingId(null);
     setDeleteTarget(null);
   }
@@ -216,6 +252,9 @@ export default function ProductsTab() {
       setData((prev) =>
         prev.map((p) => (p.id === row.id ? { ...p, active: row.active } : p))
       );
+      toast.error("Failed to update publish status");
+    } else {
+      toast.success(row.active ? `"${row.title}" unpublished` : `"${row.title}" published`);
     }
   }
 
@@ -373,17 +412,20 @@ function ProductForm({
   imagePreview,
   handleImageChange,
 }: {
-  form: Omit<Product, "id">;
-  onChange: (f: Omit<Product, "id">) => void;
+  form: FormState;
+  onChange: (f: FormState) => void;
   onSave: () => void;
   saving: boolean;
   isEdit: boolean;
   imagePreview: string | null;
   handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
-  const set = (k: keyof typeof form, v: unknown) => onChange({ ...form, [k]: v });
-  const num = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    set(k, Number(e.target.value));
+  const set = (k: keyof FormState, v: unknown) => onChange({ ...form, [k]: v });
+  // For number inputs: store raw string while typing, keep as "" if cleared
+  const num = (k: NumericField) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value;
+    set(k, v === "" ? "" : Number(v));
+  };
 
   return (
     <div className="flex flex-col gap-3">
@@ -419,10 +461,10 @@ function ProductForm({
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Original Price (₹)">
-          <input type="number" value={form.price} onChange={num("price")} className={inp} />
+          <input type="number" value={form.price ?? ""} onChange={num("price")} className={inp} />
         </Field>
         <Field label="Sale Price (₹)">
-          <input type="number" value={form.discounted_price} onChange={num("discounted_price")} className={inp} />
+          <input type="number" value={form.discounted_price?? ""} onChange={num("discounted_price")} className={inp} />
         </Field>
       </div>
 
@@ -441,13 +483,13 @@ function ProductForm({
 
       <div className="grid grid-cols-3 gap-3">
         <Field label="Skins">
-          <input type="number" value={form.skins} onChange={num("skins")} className={inp} />
+          <input type="number" value={form.skins?? ""} onChange={num("skins")} className={inp} />
         </Field>
         <Field label="Knives">
-          <input type="number" value={form.knives} onChange={num("knives")} className={inp} />
+          <input type="number" value={form.knives?? ""} onChange={num("knives")} className={inp} />
         </Field>
         <Field label="Battle Passes">
-          <input type="number" value={form.battle_passes} onChange={num("battle_passes")} className={inp} />
+          <input type="number" value={form.battle_passes?? ""} onChange={num("battle_passes")} className={inp} />
         </Field>
       </div>
 
