@@ -1,38 +1,55 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Single source of truth for every API route in the app.
-// Import from here — never hardcode paths in components or slices.
+// All internal routes use relative paths so they work in any environment.
+// External API routes use full URLs.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { FURY_VALORANT } from "@/utils/config";
+// ── Public (internal Next.js API routes) ─────────────────────────────────────
 
-const BASE = FURY_VALORANT || "";
+/** POST — submit a contact message */
+export const ROUTE_CONTACT_SUBMIT = "/api/contact";
 
-// ── Public ────────────────────────────────────────────────────────────────────
+/** GET — fetch all active (approved) reviews for the public review page */
+export const ROUTE_REVIEWS_PUBLIC = "/api/reviews";
 
-/** POST  — submit a contact message */
-export const ROUTE_CONTACT_SUBMIT   = `${BASE}/api/contact`;
+/** POST — submit a new review (lands as active=false, pending approval) */
+export const ROUTE_REVIEW_SUBMIT = "/api/reviews";
 
-/** GET   — fetch all active (approved) reviews for the public review page */
-export const ROUTE_REVIEWS_PUBLIC   = `${BASE}/api/reviews`;
+// ── Admin (require auth cookie) ───────────────────────────────────────────────
 
-/** POST  — submit a new review (lands as active=false, pending approval) */
-export const ROUTE_REVIEW_SUBMIT    = `${BASE}/api/reviews`;
+/** GET — fetch ALL contact submissions */
+export const ROUTE_ADMIN_CONTACTS = "/api/contact";
 
-// ── Admin ─────────────────────────────────────────────────────────────────────
+/** DELETE /api/contact?id= */
+export const ROUTE_ADMIN_CONTACT_DELETE = (id: string) => `/api/contact?id=${id}`;
 
-/** GET   — fetch ALL contact submissions (requires auth cookie) */
-export const ROUTE_ADMIN_CONTACTS   = `${BASE}/api/contact`;
+/** GET — fetch ALL reviews including pending */
+export const ROUTE_ADMIN_REVIEWS = "/api/admin/reviews";
 
-/** DELETE /api/contact?id= — delete a contact submission */
-export const ROUTE_ADMIN_CONTACT_DELETE = (id: string) => `${BASE}/api/contact?id=${id}`;
+/**
+ * PATCH /api/admin/reviews?id=  — update / toggle a review
+ * DELETE /api/admin/reviews?id= — hard delete a review
+ */
+export const ROUTE_ADMIN_REVIEW = (id: string) => `/api/admin/reviews?id=${id}`;
 
-/** GET   — fetch ALL reviews including pending (requires auth cookie) */
-export const ROUTE_ADMIN_REVIEWS    = `${BASE}/api/admin/reviews`;
+/** GET (with skins) / PUT / DELETE — admin product management */
+export const ROUTE_ADMIN_PRODUCTS = "/api/admin/products";
 
-/** PATCH /api/admin/reviews?id= — update / toggle a review */
-export const ROUTE_ADMIN_REVIEW = (id: string) => `${BASE}/api/admin/reviews?id=${id}`;
+/** DELETE /api/admin/products?id= */
+export const ROUTE_ADMIN_PRODUCT_DELETE = (id: string) => `/api/admin/products?id=${id}`;
 
-/** GET — Valorant weapon skins from the public API */
+/** PATCH /api/products — toggle active on a product */
+export const ROUTE_ADMIN_PRODUCT_TOGGLE = "/api/products";
+
+/** POST /api/products/skins — save skin selection for a product */
+export const ROUTE_ADMIN_PRODUCT_SKINS = "/api/products/skins";
+
+/** GET /api/products/skins?parent_product_id= — fetch skins for a product */
+export const ROUTE_ADMIN_PRODUCT_SKINS_GET = (id: string) =>
+  `/api/products/skins?parent_product_id=${id}`;
+// ── External APIs ─────────────────────────────────────────────────────────────
+
+/** GET — Valorant weapon skins */
 export const ROUTE_VALORANT_SKINS = "https://valorant-api.com/v1/weapons/skins";
 
 /** GET — Valorant weapons list (for gun-type filter) */

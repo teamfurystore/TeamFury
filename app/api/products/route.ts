@@ -1,35 +1,41 @@
 import { supabase } from "@/utils/supabaseClient";
 import { NextResponse } from "next/server";
+import sharp from "sharp";
+
+// ── Image processing ──────────────────────────────────────────────────────────
+// Converts any uploaded image to WebP, resizes to max 1080px wide while
+// preserving aspect ratio (never upscales), quality 82.
+
+async function processImage(file: File): Promise<{ buffer: Buffer; fileName: string }> {
+  const raw = Buffer.from(await file.arrayBuffer());
+  const buffer = await sharp(raw)
+    .resize({ width: 1080, withoutEnlargement: true })
+    .webp({ quality: 82 })
+    .toBuffer();
+  return { buffer, fileName: `products/${Date.now()}.webp` };
+}
+
+// ── PATCH /api/products — toggle is_active ────────────────────────────────────
 
 export async function PATCH(req: Request) {
   try {
-    const data = await req.json();
-    const { id, is_active } = data;
+    const { id, is_active } = await req.json();
 
-    console.log(data);
-    
-    console.log("🔄 Toggle is_active:", id, is_active);
-
-    const { data: updated, error } = await supabase
+    const { data, error } = await supabase
       .from("products")
       .update({ is_active: !is_active })
       .eq("id", id)
       .select();
 
     if (error) throw error;
-
-    return NextResponse.json({
-      success: true,
-      data: updated,
-    });
-  } catch (error) {
-    console.error("❌ Toggle error:", error);
-    return NextResponse.json(
-      { error: "Toggle failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: true, data });
+  } catch (err) {
+    console.error("PATCH /api/products error:", err);
+    return NextResponse.json({ error: "Toggle failed" }, { status: 500 });
   }
 }
+
+// ── POST /api/products — create product with image upload ─────────────────────
 
 export async function POST(req: Request) {
   try {
@@ -37,108 +43,68 @@ export async function POST(req: Request) {
     const file =
       (formData.get("file") as File | null) ??
       (formData.get("image") as File | null);
-    const payload = formData.get("data")?.toString();
-    const parsedPayload = payload ? JSON.parse(payload) : null;
-    const existingImageUrl = parsedPayload?.image ?? null;
-
     const data = JSON.parse(formData.get("data") as string);
+    const existingImageUrl: string | null = data?.image ?? null;
 
     if (!file && !existingImageUrl) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "No file uploaded and no existing image URL provided",
-        },
-        { status: 400 },
+        { success: false, message: "No file uploaded and no existing image URL provided" },
+        { status: 400 }
       );
     }
 
     let imageUrl = existingImageUrl;
 
     if (file) {
-      const ext = file.name.split(".").pop();
-      const fileName = `products/test-${Date.now()}.${ext}`;
+      const { buffer, fileName } = await processImage(file);
 
-      console.log("📤 Uploading image:", fileName);
-
-      // ✅ Upload
       const { error: uploadError } = await supabase.storage
         .from("Thumbnails")
-        .upload(fileName, file, {
-          contentType: file.type,
-        });
+        .upload(fileName, buffer, { contentType: "image/webp", upsert: false });
 
-      if (uploadError) {
-        console.error("❌ Upload failed:", uploadError);
-        throw uploadError;
-      }
+      if (uploadError) throw uploadError;
 
-      console.log("✅ Image uploaded successfully");
-
-      // ✅ Get public URL
-      const { data } = supabase.storage
+      const { data: urlData } = supabase.storage
         .from("Thumbnails")
         .getPublicUrl(fileName);
 
-      imageUrl = data.publicUrl;
-
-      console.log("🔗 Image URL:", imageUrl);
+      imageUrl = urlData.publicUrl;
     }
-
-    // ✅ Payload
-    const Finalpayload = {
-      title: data.title,
-      slug: data.slug,
-      price: data.price ?? 0,
-      discounted_price: data.discounted_price ?? 0,
-      current_rank: data.current_rank ?? null,
-      peak_rank: data.peak_rank ?? null,
-      skins: data.skins ?? 0,
-      knives: data.knives ?? 0,
-      battle_passes: data.battle_passes ?? 0,
-      region: data.region ?? null,
-      level: data.level ?? 0,
-      badge: data.badge ?? null,
-      image: imageUrl,
-      description: data.description ?? null,
-      verified: data.verified ?? false,
-      instant_delivery: data.instant_delivery ?? false,
-      profile_url: data.profile_url ?? null,
-    };
-
-    console.log("📦 Inserting payload:", Finalpayload);
 
     const { data: insertedData, error } = await supabase
       .from("products")
-      .insert([Finalpayload])
+      .insert([{
+        title: data.title,
+        slug: data.slug,
+        price: data.price ?? 0,
+        discounted_price: data.discounted_price ?? 0,
+        current_rank: data.current_rank ?? null,
+        peak_rank: data.peak_rank ?? null,
+        skins: data.skins ?? 0,
+        knives: data.knives ?? 0,
+        battle_passes: data.battle_passes ?? 0,
+        region: data.region ?? null,
+        level: data.level ?? 0,
+        badge: data.badge ?? null,
+        image: imageUrl,
+        description: data.description ?? null,
+        verified: data.verified ?? false,
+        instant_delivery: data.instant_delivery ?? false,
+        profile_url: data.profile_url ?? null,
+      }])
       .select();
 
-    if (error) {
-      console.error("❌ DB insert failed:", error);
-      throw error;
-    }
+    if (error) throw error;
 
-    console.log("✅ Product inserted successfully");
-
-    // ✅ FINAL RESPONSE (ACK)
     return NextResponse.json(
-      {
-        success: true,
-        message: "Image uploaded & product saved",
-        imageUrl,
-        data: insertedData,
-      },
-      { status: 200 },
+      { success: true, message: "Image uploaded & product saved", imageUrl, data: insertedData },
+      { status: 200 }
     );
   } catch (err) {
-    console.error("🔥 ERROR:", err);
+    console.error("POST /api/products error:", err);
     return NextResponse.json(
-      {
-        success: false,
-        message: "Upload failed",
-        error: err,
-      },
-      { status: 500 },
+      { success: false, message: "Upload failed", error: String(err) },
+      { status: 500 }
     );
   }
 }

@@ -25,9 +25,10 @@ export default function AboutHero() {
     const v = videoRef.current;
     if (!v) return;
     const onReady = () => setLoaded(true);
-    v.addEventListener("canplay", onReady);
-    if (v.readyState >= 3) setLoaded(true);
-    return () => v.removeEventListener("canplay", onReady);
+    // loadeddata fires as soon as the first frame is decoded — earlier than canplay
+    v.addEventListener("loadeddata", onReady);
+    if (v.readyState >= 2) setLoaded(true);
+    return () => v.removeEventListener("loadeddata", onReady);
   }, []);
 
   return (
@@ -44,13 +45,18 @@ export default function AboutHero() {
           </div>
         </div>
 
-        {/* Chunked video */}
+        {/* Static video — Next.js serves public files with Accept-Ranges support,
+            so the browser automatically requests it in chunks (Range requests).
+            Using <source type> gives the browser an early MIME hint so it can
+            start decoding before the full file arrives. */}
         <video
           ref={videoRef}
-          src="/api/video/ValoClip.mp4"
-          autoPlay loop muted playsInline preload="metadata"
+          autoPlay loop muted playsInline
+          preload="auto"
           className={`absolute inset-0 w-full h-full object-cover transition-all duration-2000 ${loaded ? "scale-100 opacity-100" : "scale-105 opacity-0"}`}
-        />
+        >
+          <source src="/ValoClip.mp4" type="video/mp4" />
+        </video>
 
         {/* Overlays */}
         <div className="absolute inset-0 bg-linear-to-b from-black/75 via-black/35 to-[#0a0a0a]" />
