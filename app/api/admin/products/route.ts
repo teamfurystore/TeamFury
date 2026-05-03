@@ -181,8 +181,11 @@ export async function PUT(req: Request) {
 }
 
 // ── DELETE /api/admin/products?id= ───────────────────────────────────────────
-// Hard-deletes a product and its associated product_items (cascade expected
-// in DB, but we also delete explicitly as a safety net).
+// Cascade delete:
+//   1. Fetch the product to get its image URL
+//   2. Delete the image from Supabase Storage (Thumbnails bucket)
+//   3. Delete all product_items (skins) for this product
+//   4. Delete the product row
 
 export async function DELETE(req: Request) {
   const { ok } = await requireAdmin(req);
@@ -192,11 +195,58 @@ export async function DELETE(req: Request) {
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
-  // Delete child skins first (in case cascade isn't set up)
-  await dbClient(req).from("product_items").delete().eq("parent_product_id", id);
+  const db = dbClient(req);
 
-  const { error } = await dbClient(req).from("products").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  // Step 1 — fetch the product so we have the image URL
+  const { data: product, error: fetchError } = await db
+    .from("products")
+    .select("image")
+    .eq("id", id)
+    .single();
+
+  if (fetchError && fetchError.code !== "PGRST116") {
+    // PGRST116 = row not found — still proceed with cleanup
+    return NextResponse.json({ error: fetchError.message }, { status: 500 });
+  }
+
+  // Step 2 — delete the image from Storage if it lives in our bucket
+  if (product?.image) {
+    const storagePath = extractStoragePath(product.image);
+    if (storagePath) {
+      // Storage delete requires the authenticated client
+      const { error: storageError } = await db.storage
+        .from("Thumbnails")
+        .remove([storagePath]);
+
+      if (storageError) {
+        // Log but don't block — the file may already be gone
+        console.warn("Storage delete warning:", storageError.message);
+      }
+    }
+  }
+
+  // Step 3 — delete all skins attached to this product
+  await db.from("product_items").delete().eq("parent_product_id", id);
+
+  // Step 4 — delete the product row
+  const { error: deleteError } = await db.from("products").delete().eq("id", id);
+  if (deleteError) return NextResponse.json({ error: deleteError.message }, { status: 500 });
 
   return NextResponse.json({ success: true });
+}
+
+// ── Helper — extract the storage object path from a Supabase public URL ───────
+// Public URL format:
+//   https://<project>.supabase.co/storage/v1/object/public/Thumbnails/products/xxx.webp
+// We need just the part after the bucket name: "products/xxx.webp"
+
+function extractStoragePath(url: string): string | null {
+  try {
+    const marker = "/object/public/Thumbnails/";
+    const idx = url.indexOf(marker);
+    if (idx === -1) return null;
+    return decodeURIComponent(url.slice(idx + marker.length));
+  } catch {
+    return null;
+  }
 }
