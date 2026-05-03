@@ -11,6 +11,8 @@ import SkinPickerPopup from "@/components/shop/SkinPickerPopup";
 import { type Rank } from "@/utils/products";
 import { ROUTE_ADMIN_PRODUCTS, ROUTE_ADMIN_PRODUCT_DELETE } from "@/utils/routes";
 
+// ── Types ─────────────────────────────────────────────────────────────────────
+
 interface ProductItem {
   id: string;
   skin_id: string;
@@ -38,43 +40,25 @@ interface Product {
   instant_delivery: boolean;
   active: boolean;
   description: string;
-  /** Skins saved in product_items table — embedded by the admin API */
   product_items: ProductItem[];
 }
 
 const RANKS: Rank[] = [
-  "Iron",
-  "Bronze",
-  "Silver",
-  "Gold",
-  "Platinum",
-  "Diamond",
-  "Ascendant",
-  "Immortal",
-  "Radiant",
+  "Iron", "Bronze", "Silver", "Gold", "Platinum",
+  "Diamond", "Ascendant", "Immortal", "Radiant",
 ];
 
 const EMPTY: Omit<Product, "id"> = {
-  slug: "",
-  title: "",
-  image: "",
-  profile_url: "",
-  price: 0,
-  discounted_price: 0,
-  badge: "",
-  current_rank: "Gold",
-  peak_rank: "Gold",
-  skins: 0,
-  knives: 0,
-  battle_passes: 0,
-  region: "India",
-  level: 0,
-  verified: true,
-  instant_delivery: true,
-  active: false,
-  description: "",
-  product_items: [],
+  slug: "", title: "", image: "", profile_url: "",
+  price: 0, discounted_price: 0, badge: "",
+  current_rank: "Gold", peak_rank: "Gold",
+  skins: 0, knives: 0, battle_passes: 0,
+  region: "India", level: 0,
+  verified: true, instant_delivery: true, active: false,
+  description: "", product_items: [],
 };
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ProductsTab() {
   const dispatch = useAppDispatch();
@@ -92,13 +76,18 @@ export default function ProductsTab() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [skinsTarget, setSkinsTarget] = useState<Product | null>(null);
 
+  // Image state — file is the new upload, preview is what's shown in the form
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
   };
+
+  // ── Data loading ────────────────────────────────────────────────────────────
 
   async function load() {
     setLoading(true);
@@ -108,8 +97,7 @@ export default function ProductsTab() {
       const rows: Product[] = json.data ?? [];
       setData(rows);
 
-      // Seed Redux savedSelections from the DB data so badge counts are
-      // correct immediately without waiting for the SkinPickerPopup to open.
+      // Seed Redux so skin badge counts show immediately
       const selections: Record<string, SelectedSkin[]> = {};
       rows.forEach((p) => {
         if (p.product_items?.length > 0) {
@@ -126,47 +114,71 @@ export default function ProductsTab() {
     }
   }
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
+
+  // ── Modal helpers ───────────────────────────────────────────────────────────
 
   function openAdd() {
     setForm(EMPTY);
     setEditId(null);
+    setImageFile(null);
+    setImagePreview(null);
     setModal("add");
   }
+
   function openEdit(row: Product) {
     const { id, ...rest } = row;
     setForm(rest);
     setEditId(id);
+    setImageFile(null);           // no new file selected yet
+    setImagePreview(row.image);   // show the existing thumbnail
     setModal("edit");
   }
 
+  function closeModal() {
+    setModal(null);
+    setImageFile(null);
+    setImagePreview(null);
+  }
+
+  // ── Save (create or update) ─────────────────────────────────────────────────
+
   async function handleSave() {
     setSaving(true);
-    setSavingId(editId || "new");
+    setSavingId(editId ?? "new");
     try {
-      let imageUrl = form.image;
+      const payload = { ...form, badge: form.badge || null };
+      const formdata = new FormData();
 
-      if (imageFile) {
-        const fileExt = imageFile.name.split(".").pop();
-        const fileName = `${form.slug || "product"}-${Date.now()}.${fileExt}`;
-        const filePath = `products/${fileName}`;
-        // image upload handled by the API route
-        void filePath;
+      if (editId) {
+        // Edit — include the id so the API knows which row to update
+        formdata.append("data", JSON.stringify({ ...payload, id: editId }));
+        if (imageFile) formdata.append("file", imageFile);
+        // If no new file, the existing image URL is already in payload.image
+
+        const res = await fetch(ROUTE_ADMIN_PRODUCTS, {
+          method: "PUT",
+          body: formdata,
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error(await res.text());
+      } else {
+        // Create — image is required
+        if (!imageFile) {
+          alert("Please select a thumbnail image.");
+          return;
+        }
+        formdata.append("data", JSON.stringify(payload));
+        formdata.append("file", imageFile);
+
+        const res = await fetch("/api/products", {
+          method: "POST",
+          body: formdata,
+        });
+        if (!res.ok) throw new Error(await res.text());
       }
 
-      const payload = { ...form, image: imageUrl, badge: form.badge || null };
-
-      const formdata = new FormData();
-      formdata.append("data", JSON.stringify(payload));
-      if (imageFile) formdata.append("file", imageFile);
-
-      const method = editId ? "PUT" : "POST";
-      await fetch("/api/products", { method, body: formdata });
-
-      setImageFile(null);
-      setModal(null);
+      closeModal();
       load();
     } catch (error) {
       console.error("Error saving product:", error);
@@ -176,6 +188,8 @@ export default function ProductsTab() {
       setSavingId(null);
     }
   }
+
+  // ── Delete ──────────────────────────────────────────────────────────────────
 
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -189,23 +203,23 @@ export default function ProductsTab() {
     setDeleteTarget(null);
   }
 
+  // ── Toggle active ───────────────────────────────────────────────────────────
+
   async function handleToggle(row: Product) {
-    // Optimistic update
     setData((prev) =>
       prev.map((p) => (p.id === row.id ? { ...p, active: !p.active } : p))
     );
-
     const result = await dispatch(
       toggleProductActive({ id: row.id, currentActive: row.active })
     );
-
-    // Revert on failure
     if (toggleProductActive.rejected.match(result)) {
       setData((prev) =>
         prev.map((p) => (p.id === row.id ? { ...p, active: row.active } : p))
       );
     }
   }
+
+  // ── Table ───────────────────────────────────────────────────────────────────
 
   const active = data.filter((p) => p.active).length;
   const inactive = data.filter((p) => !p.active).length;
@@ -217,12 +231,8 @@ export default function ProductsTab() {
       label: "Price",
       render: (row: Product) => (
         <span className="flex items-center gap-1.5">
-          <span className="line-through text-white/25 text-xs">
-            ₹{row.price.toLocaleString()}
-          </span>
-          <span className="text-emerald-400 font-medium">
-            ₹{row.discounted_price.toLocaleString()}
-          </span>
+          <span className="line-through text-white/25 text-xs">₹{row.price.toLocaleString()}</span>
+          <span className="text-emerald-400 font-medium">₹{row.discounted_price.toLocaleString()}</span>
         </span>
       ),
     },
@@ -240,7 +250,6 @@ export default function ProductsTab() {
           <span className="text-white/20 text-xs">—</span>
         ),
     },
-
     {
       key: "active",
       label: "Published",
@@ -253,15 +262,12 @@ export default function ProductsTab() {
             row.active ? "bg-emerald-500" : "bg-white/15"
           }`}
         >
-          <span
-            className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-              row.active ? "translate-x-4" : "translate-x-1"
-            }`}
-          />
+          <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+            row.active ? "translate-x-4" : "translate-x-1"
+          }`} />
         </button>
       ),
     },
-
     {
       key: "actions",
       label: "",
@@ -280,17 +286,15 @@ export default function ProductsTab() {
                 </span>
               )}
             </button>
-            <Btn variant="ghost" onClick={() => openEdit(row)}>
-              Edit
-            </Btn>
-            <Btn variant="danger" onClick={() => setDeleteTarget(row)}>
-              Delete
-            </Btn>
+            <Btn variant="ghost" onClick={() => openEdit(row)}>Edit</Btn>
+            <Btn variant="danger" onClick={() => setDeleteTarget(row)}>Delete</Btn>
           </div>
         );
       },
     },
   ];
+
+  // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col gap-4">
@@ -312,26 +316,17 @@ export default function ProductsTab() {
           </div>
         </div>
         <div className="flex gap-1.5">
-          <Btn variant="ghost" onClick={load} disabled={loading}>
-            ↻ Refresh
-          </Btn>
-          <Btn variant="primary" onClick={openAdd}>
-            + Add Product
-          </Btn>
+          <Btn variant="ghost" onClick={load} disabled={loading}>↻ Refresh</Btn>
+          <Btn variant="primary" onClick={openAdd}>+ Add Product</Btn>
         </div>
       </div>
 
-      <AdminTable
-        columns={columns}
-        data={data}
-        loading={loading}
-        emptyMessage="No products yet"
-      />
+      <AdminTable columns={columns} data={data} loading={loading} emptyMessage="No products yet" />
 
       {modal && (
         <AdminModal
           title={modal === "add" ? "Add Product" : "Edit Product"}
-          onClose={() => setModal(null)}
+          onClose={closeModal}
           size="lg"
         >
           <ProductForm
@@ -339,6 +334,8 @@ export default function ProductsTab() {
             onChange={setForm}
             onSave={handleSave}
             saving={saving}
+            isEdit={modal === "edit"}
+            imagePreview={imagePreview}
             handleImageChange={handleFileChange}
           />
         </AdminModal>
@@ -365,28 +362,44 @@ export default function ProductsTab() {
   );
 }
 
+// ── Product form ──────────────────────────────────────────────────────────────
+
 function ProductForm({
   form,
   onChange,
   onSave,
   saving,
+  isEdit,
+  imagePreview,
   handleImageChange,
 }: {
   form: Omit<Product, "id">;
   onChange: (f: Omit<Product, "id">) => void;
   onSave: () => void;
   saving: boolean;
+  isEdit: boolean;
+  imagePreview: string | null;
   handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
-  const set = (k: keyof typeof form, v: unknown) =>
-    onChange({ ...form, [k]: v });
-  const num =
-    (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
-      set(k, Number(e.target.value));
+  const set = (k: keyof typeof form, v: unknown) => onChange({ ...form, [k]: v });
+  const num = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    set(k, Number(e.target.value));
 
   return (
     <div className="flex flex-col gap-3">
-      <Field label="Thumbnail Image*">
+
+      {/* Thumbnail — required on add, optional on edit */}
+      <Field label={isEdit ? "Thumbnail Image (leave blank to keep current)" : "Thumbnail Image *"}>
+        {/* Show current / newly picked preview */}
+        {imagePreview && (
+          <div className="w-full  max-h-[30vh] rounded-xl overflow-hidden bg-white/5 border border-white/10 mb-1">
+            <img
+              src={imagePreview}
+              alt="Thumbnail preview"
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
         <input
           type="file"
           accept="image/*"
@@ -396,152 +409,78 @@ function ProductForm({
       </Field>
 
       <Field label="Title *">
-        <input
-          value={form.title}
-          onChange={(e) => set("title", e.target.value)}
-          className={inp}
-          placeholder="Diamond Smurf — 25 Skins"
-        />
+        <input value={form.title} onChange={(e) => set("title", e.target.value)}
+          className={inp} placeholder="Diamond Smurf — 25 Skins" />
       </Field>
       <Field label="Slug *">
-        <input
-          value={form.slug}
-          onChange={(e) => set("slug", e.target.value)}
-          className={inp}
-          placeholder="diamond-smurf-25-skins"
-        />
+        <input value={form.slug} onChange={(e) => set("slug", e.target.value)}
+          className={inp} placeholder="diamond-smurf-25-skins" />
       </Field>
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Original Price (₹)">
-          <input
-            type="number"
-            value={form.price}
-            onChange={num("price")}
-            className={inp}
-          />
+          <input type="number" value={form.price} onChange={num("price")} className={inp} />
         </Field>
         <Field label="Sale Price (₹)">
-          <input
-            type="number"
-            value={form.discounted_price}
-            onChange={num("discounted_price")}
-            className={inp}
-          />
+          <input type="number" value={form.discounted_price} onChange={num("discounted_price")} className={inp} />
         </Field>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Current Rank">
-          <select
-            value={form.current_rank}
-            onChange={(e) => set("current_rank", e.target.value)}
-            className={sel}
-          >
-            {RANKS.map((r) => (
-              <option key={r}>{r}</option>
-            ))}
+          <select value={form.current_rank} onChange={(e) => set("current_rank", e.target.value)} className={sel}>
+            {RANKS.map((r) => <option key={r}>{r}</option>)}
           </select>
         </Field>
         <Field label="Peak Rank">
-          <select
-            value={form.peak_rank}
-            onChange={(e) => set("peak_rank", e.target.value)}
-            className={sel}
-          >
-            {RANKS.map((r) => (
-              <option key={r}>{r}</option>
-            ))}
+          <select value={form.peak_rank} onChange={(e) => set("peak_rank", e.target.value)} className={sel}>
+            {RANKS.map((r) => <option key={r}>{r}</option>)}
           </select>
         </Field>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
         <Field label="Skins">
-          <input
-            type="number"
-            value={form.skins}
-            onChange={num("skins")}
-            className={inp}
-          />
+          <input type="number" value={form.skins} onChange={num("skins")} className={inp} />
         </Field>
         <Field label="Knives">
-          <input
-            type="number"
-            value={form.knives}
-            onChange={num("knives")}
-            className={inp}
-          />
+          <input type="number" value={form.knives} onChange={num("knives")} className={inp} />
         </Field>
         <Field label="Battle Passes">
-          <input
-            type="number"
-            value={form.battle_passes}
-            onChange={num("battle_passes")}
-            className={inp}
-          />
+          <input type="number" value={form.battle_passes} onChange={num("battle_passes")} className={inp} />
         </Field>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Region">
-          <input
-            value={form.region}
-            onChange={(e) => set("region", e.target.value)}
-            className={inp}
-            placeholder="India"
-          />
+          <input value={form.region} onChange={(e) => set("region", e.target.value)}
+            className={inp} placeholder="India" />
         </Field>
         <Field label="Level">
-          <input
-            type="number"
-            value={form.level}
-            onChange={num("level")}
-            className={inp}
-          />
+          <input type="number" value={form.level} onChange={num("level")} className={inp} />
         </Field>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Badge (optional)">
-          <input
-            value={form.badge ?? ""}
-            onChange={(e) => set("badge", e.target.value)}
-            className={inp}
-            placeholder="HOT DEAL"
-          />
+          <input value={form.badge ?? ""} onChange={(e) => set("badge", e.target.value)}
+            className={inp} placeholder="HOT DEAL" />
         </Field>
         <Field label="Valorant profile URL">
-          <input
-            value={form.profile_url}
-            onChange={(e) => set("profile_url", e.target.value)}
-            className={inp}
-            placeholder="https://tracker.gg/valorant"
-          />
+          <input value={form.profile_url} onChange={(e) => set("profile_url", e.target.value)}
+            className={inp} placeholder="https://tracker.gg/valorant" />
         </Field>
       </div>
 
       <Field label="Description">
-        <textarea
-          value={form.description}
-          onChange={(e) => set("description", e.target.value)}
-          rows={3}
-          className={`${inp} resize-none`}
-        />
+        <textarea value={form.description} onChange={(e) => set("description", e.target.value)}
+          rows={3} className={`${inp} resize-none`} />
       </Field>
 
       <div className="flex gap-5 pt-1">
-        <Toggle
-          label="Verified"
-          checked={form.verified}
-          onChange={(v) => set("verified", v)}
-        />
-        <Toggle
-          label="Instant Delivery"
-          checked={form.instant_delivery}
-          onChange={(v) => set("instant_delivery", v)}
-          color="emerald"
-        />
+        <Toggle label="Verified" checked={form.verified} onChange={(v) => set("verified", v)} />
+        <Toggle label="Instant Delivery" checked={form.instant_delivery}
+          onChange={(v) => set("instant_delivery", v)} color="emerald" />
       </div>
 
       <button
@@ -549,20 +488,15 @@ function ProductForm({
         disabled={saving || !form.title || !form.slug}
         className="mt-1 bg-white text-[#0f0f0f] hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed font-semibold py-2.5 rounded-xl transition-colors text-sm"
       >
-        {saving ? "Saving…" : "Save Product"}
+        {saving ? "Saving…" : isEdit ? "Update Product" : "Save Product"}
       </button>
     </div>
   );
 }
 
-// ── Shared ────────────────────────────────────────────────────────────────────
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+// ── Shared micro-components ───────────────────────────────────────────────────
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-xs text-white/50 font-medium">{label}</label>
@@ -571,73 +505,40 @@ function Field({
   );
 }
 
-function Toggle({
-  label,
-  checked,
-  onChange,
-  color = "white",
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-  color?: string;
+function Toggle({ label, checked, onChange, color = "white" }: {
+  label: string; checked: boolean; onChange: (v: boolean) => void; color?: string;
 }) {
-  const bg = checked
-    ? color === "emerald"
-      ? "bg-emerald-500"
-      : "bg-white"
-    : "bg-white/15";
+  const bg = checked ? (color === "emerald" ? "bg-emerald-500" : "bg-white") : "bg-white/15";
   const dot = checked
-    ? color === "emerald"
-      ? "bg-white translate-x-4"
-      : "bg-[#0f0f0f] translate-x-4"
+    ? (color === "emerald" ? "bg-white translate-x-4" : "bg-[#0f0f0f] translate-x-4")
     : "bg-white translate-x-1";
   return (
     <label className="flex items-center gap-2 cursor-pointer select-none">
-      <button
-        type="button"
-        onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${bg}`}
-      >
-        <span
-          className={`inline-block h-3.5 w-3.5 rounded-full shadow-sm transition-transform duration-200 ${dot}`}
-        />
+      <button type="button" onClick={() => onChange(!checked)}
+        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${bg}`}>
+        <span className={`inline-block h-3.5 w-3.5 rounded-full shadow-sm transition-transform duration-200 ${dot}`} />
       </button>
       <span className="text-xs text-white/55">{label}</span>
     </label>
   );
 }
 
-function Btn({
-  children,
-  onClick,
-  disabled,
-  variant = "ghost",
-}: {
-  children: React.ReactNode;
-  onClick?: () => void;
-  disabled?: boolean;
+function Btn({ children, onClick, disabled, variant = "ghost" }: {
+  children: React.ReactNode; onClick?: () => void; disabled?: boolean;
   variant?: "ghost" | "primary" | "danger";
 }) {
   const s = {
-    ghost:
-      "text-white/50 hover:text-white border border-white/10 hover:border-white/20 hover:bg-white/5",
+    ghost:   "text-white/50 hover:text-white border border-white/10 hover:border-white/20 hover:bg-white/5",
     primary: "text-white bg-white/10 hover:bg-white/15 border border-white/10",
-    danger:
-      "text-red-400 hover:text-red-300 border border-red-500/15 hover:border-red-500/30 hover:bg-red-500/5",
+    danger:  "text-red-400 hover:text-red-300 border border-red-500/15 hover:border-red-500/30 hover:bg-red-500/5",
   };
   return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${s[variant]}`}
-    >
+    <button onClick={onClick} disabled={disabled}
+      className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${s[variant]}`}>
       {children}
     </button>
   );
 }
 
-const inp =
-  "bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:ring-1 focus:ring-white/25 focus:border-white/25 transition-all w-full";
-const sel =
-  "bg-[#1a1a1a] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/25 transition-all w-full";
+const inp = "bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:ring-1 focus:ring-white/25 focus:border-white/25 transition-all w-full";
+const sel = "bg-[#1a1a1a] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/25 transition-all w-full";
