@@ -5,6 +5,13 @@ import { type Rank } from "@/utils/products";
 
 // ── DB product shape (snake_case, matches Supabase) ───────────────────────────
 
+export interface DbProductItem {
+  id: string;
+  skin_id: string;
+  display_name: string;
+  display_icon: string | null;
+}
+
 export interface DbProduct {
   id: string;
   slug: string;
@@ -25,6 +32,8 @@ export interface DbProduct {
   instant_delivery: boolean;
   description: string;
   created_at: string;
+  /** Skins saved in product_items — embedded by the API */
+  product_items: DbProductItem[];
 }
 
 // ── State ─────────────────────────────────────────────────────────────────────
