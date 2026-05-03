@@ -106,7 +106,7 @@ export async function GET(req: Request) {
 
 // ── PUT /api/admin/products ───────────────────────────────────────────────────
 // Full update of a product (edit form). Accepts multipart/form-data with
-// optional file upload (same shape as the existing POST /api/products).
+// optional file upload. Image is converted to WebP 1080px max, quality 82.
 
 export async function PUT(req: Request) {
   const { ok } = await requireAdmin(req);
@@ -125,13 +125,20 @@ export async function PUT(req: Request) {
     let imageUrl: string | undefined = fields.image;
 
     if (file) {
+      // Convert to WebP, resize to max 1080px wide, quality 82
+      const rawBuf = Buffer.from(await file.arrayBuffer());
+      const buffer = await (await import("sharp")).default(rawBuf)
+        .resize({ width: 1080, withoutEnlargement: true })
+        .webp({ quality: 82 })
+        .toBuffer();
+      const fileName = `products/${fields.slug || id}-${Date.now()}.webp`;
+
       const { supabase: storageClient } = await import("@/utils/supabaseClient");
-      const ext = file.name.split(".").pop();
-      const fileName = `products/${fields.slug || id}-${Date.now()}.${ext}`;
       const { error: uploadError } = await storageClient.storage
         .from("Thumbnails")
-        .upload(fileName, file, { contentType: file.type });
+        .upload(fileName, buffer, { contentType: "image/webp" });
       if (uploadError) throw uploadError;
+
       const { data: urlData } = storageClient.storage
         .from("Thumbnails")
         .getPublicUrl(fileName);
