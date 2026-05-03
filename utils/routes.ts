@@ -15,6 +15,9 @@ export const ROUTE_REVIEWS_PUBLIC = "/api/reviews";
 /** POST — submit a new review (lands as active=false, pending approval) */
 export const ROUTE_REVIEW_SUBMIT = "/api/reviews";
 
+/** GET — fetch all active products for the public shop */
+export const ROUTE_SHOP_PRODUCTS = "/api/shop/products";
+
 // ── Admin (require auth cookie) ───────────────────────────────────────────────
 
 /** GET — fetch ALL contact submissions */
