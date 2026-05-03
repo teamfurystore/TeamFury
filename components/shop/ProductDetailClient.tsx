@@ -1,14 +1,182 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { ShoppingCart, Shield, Zap, CheckCircle, ArrowLeft, Star, Check } from "lucide-react";
+import { ShoppingCart, Shield, Zap, CheckCircle, ArrowLeft, Check, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { RANK_COLORS } from "@/utils/products";
-import { type DbProduct } from "@/features/products/productsSlice";
+import { type DbProduct, type DbProductItem } from "@/features/products/productsSlice";
 import { useCart } from "@/contexts/CartContext";
 import ProductCard from "./ProductCard";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import StaggerReveal from "@/components/ui/StaggerReveal";
+
+// ── Skin lightbox ─────────────────────────────────────────────────────────────
+
+function SkinLightbox({
+  skins,
+  startIndex,
+  onClose,
+}: {
+  skins: DbProductItem[];
+  startIndex: number;
+  onClose: () => void;
+}) {
+  const [idx, setIdx] = useState(startIndex);
+  const skin = skins[idx];
+  const prev = () => setIdx((i) => (i - 1 + skins.length) % skins.length);
+  const next = () => setIdx((i) => (i + 1) % skins.length);
+
+  // Keyboard nav
+  useState(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft") prev();
+      if (e.key === "ArrowRight") next();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/85 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Panel */}
+      <div className="relative z-10 w-full max-w-lg flex flex-col items-center gap-4">
+        {/* Close */}
+        <button
+          onClick={onClose}
+          className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+        >
+          <X size={14} />
+        </button>
+
+        {/* Image */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={skin.id}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.18 }}
+            className="w-full bg-black/40 border border-white/10 rounded-2xl overflow-hidden flex items-center justify-center p-6"
+          >
+            {skin.display_icon ? (
+              <img
+                src={skin.display_icon}
+                alt={skin.display_name}
+                className="w-full max-h-56 object-contain"
+              />
+            ) : (
+              <span className="text-6xl opacity-20">🔫</span>
+            )}
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Name + counter */}
+        <div className="text-center">
+          <p className="text-white font-semibold text-sm">{skin.display_name}</p>
+          <p className="text-white/35 text-xs mt-0.5">{idx + 1} / {skins.length}</p>
+        </div>
+
+        {/* Prev / Next */}
+        {skins.length > 1 && (
+          <div className="flex items-center gap-4">
+            <button
+              onClick={prev}
+              className="w-10 h-10 rounded-full bg-white/8 hover:bg-white/15 border border-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            {/* Dot indicators (max 10) */}
+            <div className="flex gap-1.5">
+              {skins.slice(0, 10).map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setIdx(i)}
+                  className={`w-1.5 h-1.5 rounded-full transition-all ${
+                    i === idx ? "bg-red-500 w-3" : "bg-white/20 hover:bg-white/40"
+                  }`}
+                />
+              ))}
+              {skins.length > 10 && (
+                <span className="text-white/25 text-[10px] ml-1">+{skins.length - 10}</span>
+              )}
+            </div>
+            <button
+              onClick={next}
+              className="w-10 h-10 rounded-full bg-white/8 hover:bg-white/15 border border-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Skin grid ─────────────────────────────────────────────────────────────────
+
+function SkinsSection({ skins }: { skins: DbProductItem[] }) {
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+
+  if (skins.length === 0) return null;
+
+  return (
+    <section className="max-w-6xl mx-auto px-6 pb-10">
+      <ScrollReveal direction="up" duration={0.6}>
+        <div className="flex items-center gap-3 mb-4">
+          <h2 className="text-lg font-extrabold">Skins in this Account</h2>
+          <span className="text-xs text-white/35 bg-white/6 border border-white/10 px-2.5 py-1 rounded-full">
+            {skins.length} skins
+          </span>
+        </div>
+      </ScrollReveal>
+
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2.5">
+        {skins.map((skin, i) => (
+          <button
+            key={skin.id}
+            type="button"
+            onClick={() => setLightboxIdx(i)}
+            className="group flex flex-col gap-1.5 p-2.5 bg-white/3 border border-white/8 rounded-xl hover:border-white/20 hover:bg-white/6 transition-all text-left focus:outline-none focus:ring-1 focus:ring-white/20"
+          >
+            <div className="w-full aspect-2/1 rounded-lg overflow-hidden bg-black/20 flex items-center justify-center">
+              {skin.display_icon ? (
+                <img
+                  src={skin.display_icon}
+                  alt={skin.display_name}
+                  className="w-full h-full object-contain p-1 group-hover:scale-105 transition-transform duration-300"
+                  loading="lazy"
+                />
+              ) : (
+                <span className="text-lg opacity-15">🔫</span>
+              )}
+            </div>
+            <p className="text-[10px] text-white/55 leading-snug line-clamp-2 group-hover:text-white/80 transition-colors">
+              {skin.display_name}
+            </p>
+          </button>
+        ))}
+      </div>
+
+      <AnimatePresence>
+        {lightboxIdx !== null && (
+          <SkinLightbox
+            skins={skins}
+            startIndex={lightboxIdx}
+            onClose={() => setLightboxIdx(null)}
+          />
+        )}
+      </AnimatePresence>
+    </section>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 
 interface Props {
   product: DbProduct;
@@ -37,6 +205,7 @@ export default function ProductDetailClient({ product, related }: Props) {
       color: product.instant_delivery ? "text-emerald-400" : "text-yellow-400",
     },
   ];
+
   return (
     <div className="font-sans">
       {/* Back */}
@@ -55,11 +224,7 @@ export default function ProductDetailClient({ product, related }: Props) {
         <ScrollReveal direction="left" duration={0.7}>
           <div className="relative aspect-video bg-linear-to-br from-red-900/30 to-zinc-900 rounded-2xl overflow-hidden flex items-center justify-center border border-white/8">
             {product.image ? (
-              <img
-                src={product.image}
-                alt={product.title}
-                className="w-full h-full object-cover"
-              />
+              <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
             ) : (
               <span className="text-9xl opacity-8">🎮</span>
             )}
@@ -89,16 +254,16 @@ export default function ProductDetailClient({ product, related }: Props) {
             <div>
               <p className="text-red-500 text-xs font-bold tracking-widest uppercase mb-2">TEAM FURY</p>
               <h1 className="text-3xl font-extrabold leading-tight mb-3">{product.title}</h1>
-              <div className="flex items-center gap-1 mb-4">
-                {product?.profile_url && <Link
-                    href={product?.profile_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-500 text-normal underline"
-                  >
-                    🔗Profile Details
-                  </Link>}
-              </div>
+              {product.profile_url && (
+                <Link
+                  href={product.profile_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-blue-400 hover:text-blue-300 text-sm mb-3 transition-colors"
+                >
+                  🔗 View Profile Details
+                </Link>
+              )}
               <p className="text-white/55 text-sm leading-relaxed">{product.description}</p>
             </div>
 
@@ -212,6 +377,9 @@ export default function ProductDetailClient({ product, related }: Props) {
           </div>
         </ScrollReveal>
       </section>
+
+      {/* Skins section — only shown if skins are saved */}
+      <SkinsSection skins={product.product_items ?? []} />
 
       {/* Related */}
       {related.length > 0 && (
