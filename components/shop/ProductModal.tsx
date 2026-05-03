@@ -3,11 +3,12 @@
 import { useEffect } from "react";
 import { X, ShoppingCart, Shield, Zap, CheckCircle, Check } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { Product, RANK_COLORS } from "@/utils/products";
+import { RANK_COLORS } from "@/utils/products";
+import { type DbProduct } from "@/features/products/productsSlice";
 import { useCart } from "@/contexts/CartContext";
 
 interface Props {
-  product: Product;
+  product: DbProduct;
   onClose: () => void;
 }
 
@@ -15,9 +16,9 @@ export default function ProductModal({ product, onClose }: Props) {
   const { addToCart, isInCart } = useCart();
   const inCart = isInCart(product.id);
 
-  const discount = Math.round(
-    ((product.price - product.discountedPrice) / product.price) * 100
-  );
+  const discount = product.price > 0
+    ? Math.round(((product.price - product.discounted_price) / product.price) * 100)
+    : 0;
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -52,17 +53,23 @@ export default function ProductModal({ product, onClose }: Props) {
         </button>
 
         {/* Hero */}
-        <div className="relative aspect-video bg-linear-to-br from-red-900/30 to-zinc-900 rounded-t-2xl flex items-center justify-center">
-          <span className="text-8xl opacity-10">🎮</span>
+        <div className="relative aspect-video bg-linear-to-br from-red-900/30 to-zinc-900 rounded-t-2xl overflow-hidden flex items-center justify-center">
+          {product.image ? (
+            <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-8xl opacity-10">🎮</span>
+          )}
           <div className="absolute top-4 left-4 flex gap-2">
             {product.badge && (
               <span className="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full tracking-widest">
                 {product.badge}
               </span>
             )}
-            <span className="bg-yellow-500 text-black text-xs font-extrabold px-3 py-1 rounded-full">
-              -{discount}% OFF
-            </span>
+            {discount > 0 && (
+              <span className="bg-yellow-500 text-black text-xs font-extrabold px-3 py-1 rounded-full">
+                -{discount}% OFF
+              </span>
+            )}
           </div>
         </div>
 
@@ -72,7 +79,7 @@ export default function ProductModal({ product, onClose }: Props) {
             <h2 className="text-xl font-extrabold leading-snug">{product.title}</h2>
             <div className="text-right shrink-0">
               <p className="text-2xl font-extrabold text-white">
-                ₹{product.discountedPrice.toLocaleString("en-IN")}
+                ₹{product.discounted_price.toLocaleString("en-IN")}
               </p>
               <p className="text-sm text-white/30 line-through">
                 ₹{product.price.toLocaleString("en-IN")}
@@ -85,12 +92,12 @@ export default function ProductModal({ product, onClose }: Props) {
           {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {[
-              { label: "Current Rank", value: product.currentRank, color: RANK_COLORS[product.currentRank] },
-              { label: "Peak Rank",    value: product.peakRank,    color: RANK_COLORS[product.peakRank] },
-              { label: "Level",        value: `Lv. ${product.level}`, color: "text-white" },
-              { label: "Skins",        value: `${product.skins}`,  color: "text-purple-400" },
-              { label: "Knives",       value: `${product.knives}`, color: "text-red-400" },
-              { label: "Battle Passes",value: `${product.battlePasses}`, color: "text-blue-400" },
+              { label: "Current Rank",  value: product.current_rank,  color: RANK_COLORS[product.current_rank] },
+              { label: "Peak Rank",     value: product.peak_rank,     color: RANK_COLORS[product.peak_rank] },
+              { label: "Level",         value: `Lv. ${product.level}`, color: "text-white" },
+              { label: "Skins",         value: `${product.skins}`,    color: "text-purple-400" },
+              { label: "Knives",        value: `${product.knives}`,   color: "text-red-400" },
+              { label: "Battle Passes", value: `${product.battle_passes}`, color: "text-blue-400" },
             ].map((s) => (
               <div key={s.label} className="bg-white/5 border border-white/8 rounded-xl p-3">
                 <p className="text-white/40 text-xs mb-1">{s.label}</p>
@@ -106,7 +113,7 @@ export default function ProductModal({ product, onClose }: Props) {
                 <Shield size={11} /> Verified
               </span>
             )}
-            {product.instantDelivery && (
+            {product.instant_delivery && (
               <span className="flex items-center gap-1.5 text-xs text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 px-3 py-1.5 rounded-full">
                 <Zap size={11} /> Instant Delivery
               </span>
@@ -138,7 +145,7 @@ export default function ProductModal({ product, onClose }: Props) {
                   initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
                   transition={{ duration: 0.2 }}>
                   <ShoppingCart size={15} />
-                  Add to Cart — ₹{product.discountedPrice.toLocaleString("en-IN")}
+                  Add to Cart — ₹{product.discounted_price.toLocaleString("en-IN")}
                 </motion.span>
               )}
             </AnimatePresence>
