@@ -3,37 +3,40 @@
 import Link from "next/link";
 import { ShoppingCart, Shield, Zap, CheckCircle, ArrowLeft, Star, Check } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { Product, RANK_COLORS } from "@/utils/products";
+import { RANK_COLORS } from "@/utils/products";
+import { type DbProduct } from "@/features/products/productsSlice";
 import { useCart } from "@/contexts/CartContext";
 import ProductCard from "./ProductCard";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import StaggerReveal from "@/components/ui/StaggerReveal";
 
 interface Props {
-  product: Product;
-  related: Product[];
+  product: DbProduct;
+  related: DbProduct[];
 }
 
 export default function ProductDetailClient({ product, related }: Props) {
   const { addToCart, isInCart } = useCart();
   const inCart = isInCart(product.id);
 
-  const discount = Math.round(
-    ((product.price - product.discountedPrice) / product.price) * 100
-  );
+  const discount = product.price > 0
+    ? Math.round(((product.price - product.discounted_price) / product.price) * 100)
+    : 0;
 
   const stats = [
-    { label: "Current Rank",  value: product.currentRank,  color: RANK_COLORS[product.currentRank] },
-    { label: "Peak Rank",     value: product.peakRank,     color: RANK_COLORS[product.peakRank] },
+    { label: "Current Rank",  value: product.current_rank,  color: RANK_COLORS[product.current_rank] },
+    { label: "Peak Rank",     value: product.peak_rank,     color: RANK_COLORS[product.peak_rank] },
     { label: "Account Level", value: `Lv. ${product.level}`, color: "text-white" },
     { label: "Premium Skins", value: `${product.skins} skins`, color: "text-purple-400" },
     { label: "Rare Knives",   value: `${product.knives} knives`, color: "text-red-400" },
-    { label: "Battle Passes", value: `${product.battlePasses} passes`, color: "text-blue-400" },
+    { label: "Battle Passes", value: `${product.battle_passes} passes`, color: "text-blue-400" },
     { label: "Region",        value: product.region, color: "text-cyan-400" },
-    { label: "Delivery",      value: product.instantDelivery ? "Instant (< 5 min)" : "Within 24h",
-      color: product.instantDelivery ? "text-emerald-400" : "text-yellow-400" },
+    {
+      label: "Delivery",
+      value: product.instant_delivery ? "Instant (< 5 min)" : "Within 24h",
+      color: product.instant_delivery ? "text-emerald-400" : "text-yellow-400",
+    },
   ];
-
   return (
     <div className="font-sans">
       {/* Back */}
@@ -51,18 +54,28 @@ export default function ProductDetailClient({ product, related }: Props) {
         {/* Image */}
         <ScrollReveal direction="left" duration={0.7}>
           <div className="relative aspect-video bg-linear-to-br from-red-900/30 to-zinc-900 rounded-2xl overflow-hidden flex items-center justify-center border border-white/8">
-            <span className="text-9xl opacity-8">🎮</span>
+            {product.image ? (
+              <img
+                src={product.image}
+                alt={product.title}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-9xl opacity-8">🎮</span>
+            )}
             <div className="absolute top-4 left-4 flex gap-2">
               {product.badge && (
                 <span className="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full tracking-widest">
                   {product.badge}
                 </span>
               )}
-              <span className="bg-yellow-500 text-black text-xs font-extrabold px-3 py-1 rounded-full">
-                -{discount}% OFF
-              </span>
+              {discount > 0 && (
+                <span className="bg-yellow-500 text-black text-xs font-extrabold px-3 py-1 rounded-full">
+                  -{discount}% OFF
+                </span>
+              )}
             </div>
-            {product.instantDelivery && (
+            {product.instant_delivery && (
               <div className="absolute bottom-4 left-4 flex items-center gap-1.5 bg-emerald-600/90 text-white text-xs font-bold px-3 py-1.5 rounded-full">
                 <Zap size={11} /> Instant Delivery
               </div>
@@ -77,10 +90,14 @@ export default function ProductDetailClient({ product, related }: Props) {
               <p className="text-red-500 text-xs font-bold tracking-widest uppercase mb-2">TEAM FURY</p>
               <h1 className="text-3xl font-extrabold leading-tight mb-3">{product.title}</h1>
               <div className="flex items-center gap-1 mb-4">
-                {[1,2,3,4,5].map((s) => (
-                  <Star key={s} size={13} className="fill-yellow-400 text-yellow-400" />
-                ))}
-                <span className="text-white/35 text-xs ml-2">Verified Purchase</span>
+                {product?.profile_url && <Link
+                    href={product?.profile_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 text-normal underline"
+                  >
+                    🔗Profile Details
+                  </Link>}
               </div>
               <p className="text-white/55 text-sm leading-relaxed">{product.description}</p>
             </div>
@@ -88,24 +105,26 @@ export default function ProductDetailClient({ product, related }: Props) {
             {/* Price */}
             <div className="flex items-baseline gap-3 py-4 border-y border-white/8">
               <span className="text-4xl font-extrabold text-white">
-                ₹{product.discountedPrice.toLocaleString("en-IN")}
+                ₹{product.discounted_price.toLocaleString("en-IN")}
               </span>
               <span className="text-lg text-white/30 line-through">
                 ₹{product.price.toLocaleString("en-IN")}
               </span>
-              <span className="bg-emerald-600/15 text-emerald-400 text-sm font-semibold px-3 py-1 rounded-full border border-emerald-500/20">
-                Save ₹{(product.price - product.discountedPrice).toLocaleString("en-IN")}
-              </span>
+              {discount > 0 && (
+                <span className="bg-emerald-600/15 text-emerald-400 text-sm font-semibold px-3 py-1 rounded-full border border-emerald-500/20">
+                  Save ₹{(product.price - product.discounted_price).toLocaleString("en-IN")}
+                </span>
+              )}
             </div>
 
-            {/* Trust */}
+            {/* Trust badges */}
             <div className="flex flex-wrap gap-2">
               {product.verified && (
                 <span className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-3 py-1.5 rounded-full">
                   <Shield size={11} /> Verified Account
                 </span>
               )}
-              {product.instantDelivery && (
+              {product.instant_delivery && (
                 <span className="flex items-center gap-1.5 text-xs text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 px-3 py-1.5 rounded-full">
                   <Zap size={11} /> Instant Delivery
                 </span>
@@ -138,7 +157,7 @@ export default function ProductDetailClient({ product, related }: Props) {
                       initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
                       transition={{ duration: 0.22 }}>
                       <ShoppingCart size={16} />
-                      Add to Cart — ₹{product.discountedPrice.toLocaleString("en-IN")}
+                      Add to Cart — ₹{product.discounted_price.toLocaleString("en-IN")}
                     </motion.span>
                   )}
                 </AnimatePresence>
@@ -179,11 +198,11 @@ export default function ProductDetailClient({ product, related }: Props) {
             {[
               `${product.skins} Premium Skins`,
               product.knives > 0 ? `${product.knives} Rare Knife(s)` : null,
-              product.battlePasses > 0 ? `${product.battlePasses} Battle Pass(es)` : null,
+              product.battle_passes > 0 ? `${product.battle_passes} Battle Pass(es)` : null,
               "Verified Email Access",
               "Full Account Ownership",
               "Post-Sale Support",
-              product.instantDelivery ? "Instant Delivery (< 5 min)" : "Delivery within 24h",
+              product.instant_delivery ? "Instant Delivery (< 5 min)" : "Delivery within 24h",
               "Anti-Scam Guarantee",
             ].filter(Boolean).map((item) => (
               <div key={item} className="flex items-center gap-2 text-sm text-white/65">

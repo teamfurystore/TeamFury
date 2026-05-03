@@ -1,13 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { PRODUCTS, Rank } from "@/utils/products";
-import ShopGrid from "./ShopGrid";
+import { useEffect, useMemo, useState } from "react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { fetchShopProducts, type DbProduct } from "@/features/products/productsSlice";
+import { type Rank, RANK_COLORS } from "@/utils/products";
+import ProductCard from "./ProductCard";
+import StaggerReveal from "@/components/ui/StaggerReveal";
 import ScrollReveal from "@/components/ui/ScrollReveal";
+import { Loader2 } from "lucide-react";
 
 const RANK_OPTIONS: Rank[] = [
-  "Iron","Bronze","Silver","Gold","Platinum",
-  "Diamond","Ascendant","Immortal","Radiant",
+  "Iron", "Bronze", "Silver", "Gold", "Platinum",
+  "Diamond", "Ascendant", "Immortal", "Radiant",
 ];
 
 const SORT_OPTIONS = [
@@ -17,21 +21,29 @@ const SORT_OPTIONS = [
   { label: "Highest Rank",       value: "rank"       },
 ];
 
-const FEATURED_IDS = ["p3", "p1", "p5", "p7"];
-
 export default function ShopClient() {
+  const dispatch = useAppDispatch();
+  const { list, loading, error } = useAppSelector((s) => s.products);
+
   const [filterRank, setFilterRank] = useState<Rank | "All">("All");
   const [sort, setSort] = useState("price-asc");
 
+  // Fetch once on mount
+  useEffect(() => {
+    if (list.length === 0) dispatch(fetchShopProducts());
+  }, [dispatch, list.length]);
+
   const filtered = useMemo(() => {
-    let list = [...PRODUCTS];
-    if (filterRank !== "All") list = list.filter((p) => p.currentRank === filterRank);
-    if (sort === "price-asc")  list.sort((a, b) => a.discountedPrice - b.discountedPrice);
-    if (sort === "price-desc") list.sort((a, b) => b.discountedPrice - a.discountedPrice);
-    if (sort === "skins")      list.sort((a, b) => b.skins - a.skins);
-    if (sort === "rank")       list.sort((a, b) => RANK_OPTIONS.indexOf(b.currentRank) - RANK_OPTIONS.indexOf(a.currentRank));
-    return list;
-  }, [filterRank, sort]);
+    let items = [...list];
+    if (filterRank !== "All")
+      items = items.filter((p) => p.current_rank === filterRank);
+    if (sort === "price-asc")  items.sort((a, b) => a.discounted_price - b.discounted_price);
+    if (sort === "price-desc") items.sort((a, b) => b.discounted_price - a.discounted_price);
+    if (sort === "skins")      items.sort((a, b) => b.skins - a.skins);
+    if (sort === "rank")
+      items.sort((a, b) => RANK_OPTIONS.indexOf(b.current_rank) - RANK_OPTIONS.indexOf(a.current_rank));
+    return items;
+  }, [list, filterRank, sort]);
 
   return (
     <div className="font-sans">
@@ -91,23 +103,40 @@ export default function ShopClient() {
 
       {/* Grid */}
       <section className="max-w-7xl mx-auto px-6 py-10">
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-4 text-white/30">
+            <Loader2 size={32} className="animate-spin" />
+            <p className="text-sm">Loading accounts…</p>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+            <p className="text-4xl">⚠️</p>
+            <p className="text-white/60 text-sm">{error}</p>
+            <button
+              onClick={() => dispatch(fetchShopProducts())}
+              className="text-xs text-red-400 border border-red-500/20 hover:border-red-500/40 px-4 py-2 rounded-xl transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="text-center py-20 text-white/30">
             <p className="text-4xl mb-3">😔</p>
-            <p>No accounts found for this rank.</p>
+            <p>{list.length === 0 ? "No accounts available right now." : "No accounts found for this rank."}</p>
           </div>
         ) : (
-          <ShopGrid productIds={filtered.map((p) => p.id)} />
+          <StaggerReveal
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
+            stagger={0.08}
+            y={30}
+            duration={0.6}
+          >
+            {filtered.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </StaggerReveal>
         )}
       </section>
-
-      {/* Featured */}
-      {/* <section className="max-w-7xl mx-auto px-6 pb-20">
-        <ScrollReveal direction="up" duration={0.6}>
-          <h2 className="text-xl font-extrabold mb-6">Featured Picks</h2>
-        </ScrollReveal>
-        <ShopGrid productIds={FEATURED_IDS} />
-      </section> */}
     </div>
   );
 }

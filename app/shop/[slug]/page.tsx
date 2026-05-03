@@ -1,17 +1,35 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { PRODUCTS } from "@/utils/products";
+import { type DbProduct } from "@/features/products/productsSlice";
 import ProductDetailClient from "@/components/shop/ProductDetailClient";
 
-export function generateStaticParams() {
-  return PRODUCTS.map((p) => ({ slug: p.slug }));
+const BASE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+
+async function getActiveProducts(): Promise<DbProduct[]> {
+  try {
+    const res = await fetch(`${BASE_URL}/api/shop/products`, {
+      next: { revalidate: 60 }, // ISR — revalidate every 60s
+    });
+    const json = await res.json();
+    return json.data ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export async function generateStaticParams() {
+  const products = await getActiveProducts();
+  return products.map((p) => ({ slug: p.slug }));
 }
 
 export async function generateMetadata(
   props: PageProps<"/shop/[slug]">
 ): Promise<Metadata> {
   const { slug } = await props.params;
-  const product = PRODUCTS.find((p) => p.slug === slug);
+  const products = await getActiveProducts();
+  const product = products.find((p) => p.slug === slug);
   if (!product) return { title: "Not Found | TEAM FURY" };
   return {
     title: `${product.title} | TEAM FURY`,
@@ -23,21 +41,22 @@ export default async function ProductDetailPage(
   props: PageProps<"/shop/[slug]">
 ) {
   const { slug } = await props.params;
-  const product = PRODUCTS.find((p) => p.slug === slug);
+  const products = await getActiveProducts();
+  const product = products.find((p) => p.slug === slug);
   if (!product) notFound();
 
-  // Related: same rank or adjacent, exclude current
-  const related = PRODUCTS.filter(
-    (p) => p.id !== product.id && p.currentRank === product.currentRank
+  // Related: same rank first, then fill with others
+  const sameRank = products.filter(
+    (p) => p.id !== product.id && p.current_rank === product.current_rank
   ).slice(0, 4);
-  const fallback = PRODUCTS.filter(
-    (p) => p.id !== product.id && !related.find((r) => r.id === p.id)
-  ).slice(0, 4 - related.length);
+  const others = products
+    .filter((p) => p.id !== product.id && !sameRank.find((r) => r.id === p.id))
+    .slice(0, 4 - sameRank.length);
 
   return (
     <ProductDetailClient
       product={product}
-      related={[...related, ...fallback]}
+      related={[...sameRank, ...others]}
     />
   );
 }
