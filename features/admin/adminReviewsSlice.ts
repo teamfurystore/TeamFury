@@ -3,7 +3,6 @@ import axiosInstance from "@/utils/axiosInstance";
 import {
   ROUTE_ADMIN_REVIEWS,
   ROUTE_ADMIN_REVIEW,
-  ROUTE_REVIEW_SUBMIT,
 } from "@/utils/routes";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -67,13 +66,13 @@ export const fetchAdminReviews = createAsyncThunk<AdminReview[]>(
   }
 );
 
-/** Add a new review via the public POST endpoint */
+/** Add a new review via the admin POST endpoint (respects active flag) */
 export const addAdminReview = createAsyncThunk<AdminReview, ReviewFormPayload>(
   "adminReviews/add",
   async (payload, { rejectWithValue }) => {
     try {
       const { data } = await axiosInstance.post<{ success: boolean; data: AdminReview }>(
-        ROUTE_REVIEW_SUBMIT,
+        ROUTE_ADMIN_REVIEWS,
         payload
       );
       return data.data;

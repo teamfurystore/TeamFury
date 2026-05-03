@@ -32,14 +32,21 @@ export const ROUTE_ADMIN_REVIEWS = "/api/admin/reviews";
  */
 export const ROUTE_ADMIN_REVIEW = (id: string) => `/api/admin/reviews?id=${id}`;
 
-/** GET — fetch all products */
-export const ROUTE_ADMIN_PRODUCTS = "/api/products";
+/** GET (with skins) / PUT / DELETE — admin product management */
+export const ROUTE_ADMIN_PRODUCTS = "/api/admin/products";
+
+/** DELETE /api/admin/products?id= */
+export const ROUTE_ADMIN_PRODUCT_DELETE = (id: string) => `/api/admin/products?id=${id}`;
 
 /** PATCH /api/products — toggle active on a product */
 export const ROUTE_ADMIN_PRODUCT_TOGGLE = "/api/products";
 
 /** POST /api/products/skins — save skin selection for a product */
 export const ROUTE_ADMIN_PRODUCT_SKINS = "/api/products/skins";
+
+/** GET /api/products/skins?parent_product_id= — fetch skins for a product */
+export const ROUTE_ADMIN_PRODUCT_SKINS_GET = (id: string) =>
+  `/api/products/skins?parent_product_id=${id}`;
 // ── External APIs ─────────────────────────────────────────────────────────────
 
 /** GET — Valorant weapon skins */

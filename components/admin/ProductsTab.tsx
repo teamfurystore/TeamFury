@@ -1,15 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/utils/supabaseClient";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { toggleProductActive } from "@/features/admin/adminProductsSlice";
-import { selectSavedSkins } from "@/features/valorant/skinsSlice";
+import { selectSavedSkins, seedSelections, type SelectedSkin } from "@/features/valorant/skinsSlice";
 import AdminTable from "./AdminTable";
 import AdminModal from "./AdminModal";
 import DeleteConfirm from "./DeleteConfirm";
 import SkinPickerPopup from "@/components/shop/SkinPickerPopup";
 import { type Rank } from "@/utils/products";
+import { ROUTE_ADMIN_PRODUCTS, ROUTE_ADMIN_PRODUCT_DELETE } from "@/utils/routes";
+
+interface ProductItem {
+  id: string;
+  skin_id: string;
+  display_name: string;
+  display_icon: string | null;
+}
 
 interface Product {
   id: string;
@@ -31,6 +38,8 @@ interface Product {
   instant_delivery: boolean;
   active: boolean;
   description: string;
+  /** Skins saved in product_items table — embedded by the admin API */
+  product_items: ProductItem[];
 }
 
 const RANKS: Rank[] = [
@@ -64,6 +73,7 @@ const EMPTY: Omit<Product, "id"> = {
   instant_delivery: true,
   active: false,
   description: "",
+  product_items: [],
 };
 
 export default function ProductsTab() {
@@ -92,12 +102,28 @@ export default function ProductsTab() {
 
   async function load() {
     setLoading(true);
-    const { data: rows } = await supabase
-      .from("products")
-      .select("*, active:is_active")
-      .order("created_at", { ascending: false });
-    setData(rows ?? []);
-    setLoading(false);
+    try {
+      const res = await fetch(ROUTE_ADMIN_PRODUCTS, { credentials: "include" });
+      const json = await res.json();
+      const rows: Product[] = json.data ?? [];
+      setData(rows);
+
+      // Seed Redux savedSelections from the DB data so badge counts are
+      // correct immediately without waiting for the SkinPickerPopup to open.
+      const selections: Record<string, SelectedSkin[]> = {};
+      rows.forEach((p) => {
+        if (p.product_items?.length > 0) {
+          selections[p.id] = p.product_items.map((item) => ({
+            uuid: item.skin_id,
+            displayName: item.display_name,
+            displayIcon: item.display_icon,
+          }));
+        }
+      });
+      dispatch(seedSelections(selections));
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -154,7 +180,10 @@ export default function ProductsTab() {
   async function handleDelete() {
     if (!deleteTarget) return;
     setDeletingId(deleteTarget.id);
-    await supabase.from("products").delete().eq("id", deleteTarget.id);
+    await fetch(ROUTE_ADMIN_PRODUCT_DELETE(deleteTarget.id), {
+      method: "DELETE",
+      credentials: "include",
+    });
     setData((prev) => prev.filter((r) => r.id !== deleteTarget.id));
     setDeletingId(null);
     setDeleteTarget(null);

@@ -37,7 +37,7 @@ export interface ValorantSkin {
 export interface ValorantWeapon {
   uuid: string;
   displayName: string;
-  category: string; // e.g. "EEquippableCategory::Rifle"
+  category: string;
 }
 
 export interface SelectedSkin {
@@ -82,9 +82,14 @@ export const fetchValorantSkins = createAsyncThunk<
   try {
     const [skinsRes, weaponsRes] = await Promise.all([
       axios.get<{ data: ValorantSkin[] }>(ROUTE_VALORANT_SKINS),
-      axios.get<{ data: Array<{ uuid: string; displayName: string; category: string; skins: Array<{ uuid: string }> }> }>(
-        ROUTE_VALORANT_WEAPONS
-      ),
+      axios.get<{
+        data: Array<{
+          uuid: string;
+          displayName: string;
+          category: string;
+          skins: Array<{ uuid: string }>;
+        }>;
+      }>(ROUTE_VALORANT_WEAPONS),
     ]);
 
     const weapons: ValorantWeapon[] = weaponsRes.data.data.map((w) => ({
@@ -93,7 +98,6 @@ export const fetchValorantSkins = createAsyncThunk<
       category: w.category,
     }));
 
-    // Build a uuid→weaponName lookup from the weapons endpoint
     const skinToWeapon: Record<string, string> = {};
     weaponsRes.data.data.forEach((weapon) => {
       weapon.skins.forEach((s) => {
@@ -101,7 +105,6 @@ export const fetchValorantSkins = createAsyncThunk<
       });
     });
 
-    // Attach weaponName to each skin
     const skins: ValorantSkin[] = skinsRes.data.data.map((skin) => ({
       ...skin,
       weaponName: skinToWeapon[skin.uuid] ?? "Unknown",
@@ -109,10 +112,9 @@ export const fetchValorantSkins = createAsyncThunk<
 
     return { skins, weapons };
   } catch (err: unknown) {
-    const msg =
-      axios.isAxiosError(err)
-        ? err.response?.data?.message ?? err.message
-        : "Failed to fetch skins";
+    const msg = axios.isAxiosError(err)
+      ? err.response?.data?.message ?? err.message
+      : "Failed to fetch skins";
     return rejectWithValue(msg);
   }
 });
@@ -120,9 +122,10 @@ export const fetchValorantSkins = createAsyncThunk<
 // ── Thunk: persist skin selection to the DB ───────────────────────────────────
 
 export interface ProductSkinsPayload {
-  parent_product_id: string;
-  items: Array<{
-    skin_id: string;
+  /** The product UUID — maps to parent_product_id in the DB */
+  parent_id: string;
+  skins: Array<{
+    uuid: string;
     display_name: string;
     display_icon: string | null;
   }>;
@@ -130,34 +133,39 @@ export interface ProductSkinsPayload {
 
 /**
  * Saves the selected skins for a product to the database.
- * Body shape: { parent_id: "123", skins: [{ uuid, display_name, display_icon }] }
+ * Calls PUT /api/products/skins which atomically replaces all skins
+ * for the product (delete existing + insert new) in a single request.
  */
 export const saveProductSkins = createAsyncThunk<
   ProductSkinsPayload,
   ProductSkinsPayload
->(
-  "skins/saveProductSkins",
-  async (payload, { rejectWithValue }) => {
-    try {
-      await axiosInstance.post(ROUTE_ADMIN_PRODUCT_SKINS, payload);
-      return payload;
-    } catch (err: unknown) {
-      const msg =
-        axios.isAxiosError(err)
-          ? err.response?.data?.error ?? err.message
-          : "Failed to save skins";
-      return rejectWithValue(msg);
-    }
+>("skins/saveProductSkins", async (payload, { rejectWithValue }) => {
+  try {
+    await axiosInstance.put(ROUTE_ADMIN_PRODUCT_SKINS, {
+      parent_product_id: payload.parent_id,
+      items: payload.skins.map((s) => ({
+        skin_id: s.uuid,
+        display_name: s.display_name,
+        display_icon: s.display_icon,
+      })),
+    });
+    return payload;
+  } catch (err: unknown) {
+    const msg = axios.isAxiosError(err)
+      ? err.response?.data?.error ?? err.message
+      : "Failed to save skins";
+    return rejectWithValue(msg);
   }
-);
+});
 
 // ── Slice ─────────────────────────────────────────────────────────────────────
+
 const skinsSlice = createSlice({
   name: "skins",
   initialState,
   reducers: {
     /**
-     * Save the selected skins for a specific product.
+     * Save the selected skins for a specific product in local Redux state.
      * payload: { productId: string; skins: SelectedSkin[] }
      */
     saveSelection(
@@ -170,6 +178,22 @@ const skinsSlice = createSlice({
     /** Clear the selection for a specific product */
     clearSelection(state, action: { payload: string }) {
       delete state.savedSelections[action.payload];
+    },
+
+    /**
+     * Seed savedSelections from DB data (called after loading products).
+     * payload: Record<productId, SelectedSkin[]>
+     */
+    seedSelections(
+      state,
+      action: { payload: Record<string, SelectedSkin[]> }
+    ) {
+      // Merge — don't overwrite entries that were already modified locally
+      Object.entries(action.payload).forEach(([id, skins]) => {
+        if (!state.savedSelections[id]) {
+          state.savedSelections[id] = skins;
+        }
+      });
     },
   },
   extraReducers: (builder) => {
@@ -187,10 +211,31 @@ const skinsSlice = createSlice({
         state.loading = false;
         state.error = action.payload ?? "Unknown error";
       });
+
+    builder
+      .addCase(saveProductSkins.pending, (state, action) => {
+        state.savingProductId = action.meta.arg.parent_id;
+        state.saveError = null;
+      })
+      .addCase(saveProductSkins.fulfilled, (state, action) => {
+        state.savingProductId = null;
+        // Mirror the saved skins into local Redux state
+        state.savedSelections[action.payload.parent_id] = action.payload.skins.map(
+          (s) => ({
+            uuid: s.uuid,
+            displayName: s.display_name,
+            displayIcon: s.display_icon,
+          })
+        );
+      })
+      .addCase(saveProductSkins.rejected, (state, action) => {
+        state.savingProductId = null;
+        state.saveError = action.payload as string;
+      });
   },
 });
 
-export const { saveSelection, clearSelection } = skinsSlice.actions;
+export const { saveSelection, clearSelection, seedSelections } = skinsSlice.actions;
 export default skinsSlice.reducer;
 
 // ── Selectors ─────────────────────────────────────────────────────────────────
