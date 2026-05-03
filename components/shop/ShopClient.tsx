@@ -118,42 +118,6 @@ export default function ShopClient() {
             </select>
           </div>
 
-          {/* Rank pills */}
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => setFilterRank("All")}
-              className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
-                filterRank === "All"
-                  ? "bg-red-600 border-red-600 text-white"
-                  : "border-white/12 text-white/45 hover:text-white hover:border-white/25"
-              }`}
-            >
-              All Ranks
-            </button>
-            {RANK_OPTIONS.map((r) => (
-              <button
-                key={r}
-                onClick={() => setFilterRank(filterRank === r ? "All" : r)}
-                className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
-                  filterRank === r
-                    ? "bg-red-600 border-red-600 text-white"
-                    : "border-white/12 text-white/45 hover:text-white hover:border-white/25"
-                }`}
-              >
-                {r}
-              </button>
-            ))}
-
-            {/* Active filter count + clear */}
-            {hasFilters && (
-              <button
-                onClick={() => { setQuery(""); setFilterRank("All"); }}
-                className="ml-auto text-xs text-white/35 hover:text-white/70 flex items-center gap-1 transition-colors"
-              >
-                <X size={11} /> Clear filters
-              </button>
-            )}
-          </div>
         </div>
       </div>
 
