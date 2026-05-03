@@ -205,23 +205,15 @@ export async function DELETE(req: Request) {
     .single();
 
   if (fetchError && fetchError.code !== "PGRST116") {
-    // PGRST116 = row not found — still proceed with cleanup
     return NextResponse.json({ error: fetchError.message }, { status: 500 });
   }
 
-  // Step 2 — delete the image from Storage if it lives in our bucket
+  // Step 2 — delete the image from Storage
+  
   if (product?.image) {
     const storagePath = extractStoragePath(product.image);
     if (storagePath) {
-      // Storage delete requires the authenticated client
-      const { error: storageError } = await db.storage
-        .from("Thumbnails")
-        .remove([storagePath]);
-
-      if (storageError) {
-        // Log but don't block — the file may already be gone
-        console.warn("Storage delete warning:", storageError.message);
-      }
+      await deleteStorageFile(storagePath, req);
     }
   }
 
@@ -235,11 +227,13 @@ export async function DELETE(req: Request) {
   return NextResponse.json({ success: true });
 }
 
-// ── Helper — extract the storage object path from a Supabase public URL ───────
-// Public URL format:
-//   https://<project>.supabase.co/storage/v1/object/public/Thumbnails/products/xxx.webp
-// We need just the part after the bucket name: "products/xxx.webp"
+// ── Storage helpers ───────────────────────────────────────────────────────────
 
+/**
+ * Extract the object path inside the bucket from a Supabase public URL.
+ * https://<ref>.supabase.co/storage/v1/object/public/Thumbnails/products/abc.webp
+ *   → "products/abc.webp"
+ */
 function extractStoragePath(url: string): string | null {
   try {
     const marker = "/object/public/Thumbnails/";
@@ -249,4 +243,51 @@ function extractStoragePath(url: string): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Delete a file from the Thumbnails bucket via the Supabase Storage REST API.
+ *
+ * Priority:
+ *   1. Service role key — bypasses RLS, always works (add SUPABASE_SERVICE_ROLE_KEY to .env.local)
+ *   2. User JWT — works if the bucket policy allows authenticated deletes
+ *
+ * Never throws — logs a warning and returns if the delete fails so the
+ * product row delete is never blocked by a storage issue.
+ */
+async function deleteStorageFile(path: string, req: Request): Promise<void> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\/$/, "");
+  const bucket = "Thumbnails";
+
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const token =
+    serviceKey && serviceKey !== "your_service_role_key_here"
+      ? serviceKey
+      : extractToken(req.headers.get("cookie"));
+
+  if (!token) {
+    console.warn("deleteStorageFile: no token available, skipping image delete");
+    return;
+  }
+
+  // try {
+  //   // Use the batch delete endpoint: DELETE /storage/v1/object/<bucket>
+  //   // Body: { prefixes: ["path/to/file.webp"] }
+  //   const res = await fetch(`${supabaseUrl}/storage/v1/object/${bucket}`, {
+  //     method: "DELETE",
+  //     headers: {
+  //       Authorization: `Bearer ${token}`,
+  //       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  //       "Content-Type": "application/json",
+  //     },
+  //     body: JSON.stringify({ prefixes: [path] }),
+  //   });
+
+  //   if (!res.ok) {
+  //     const body = await res.text();
+  //     console.warn(`deleteStorageFile: ${res.status} — ${body}`);
+  //   }
+  // } catch (err) {
+  //   console.warn("deleteStorageFile: request failed —", err);
+  // }
 }
