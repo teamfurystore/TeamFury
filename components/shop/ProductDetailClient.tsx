@@ -122,7 +122,6 @@ function SkinLightbox({
 
 function SkinsSection({ skins }: { skins: DbProductItem[] }) {
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
-
   if (skins.length === 0) return null;
 
   return (
@@ -205,7 +204,6 @@ export default function ProductDetailClient({ product, related }: Props) {
       color: product.instant_delivery ? "text-emerald-400" : "text-yellow-400",
     },
   ];
-
   return (
     <div className="font-sans">
       {/* Back */}
