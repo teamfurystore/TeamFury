@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { X, Search, Check, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
@@ -221,7 +222,7 @@ export default function SkinPickerPopup({ productId, productName, onClose }: Pro
 
   async function handleSave() {
     dispatch(saveSelection({ productId, skins: draft }));
-    await dispatch(
+    const result = await dispatch(
       saveProductSkins({
         parent_id: productId,
         skins: draft.map((s) => ({
@@ -231,6 +232,11 @@ export default function SkinPickerPopup({ productId, productName, onClose }: Pro
         })),
       })
     );
+    if (saveProductSkins.fulfilled.match(result)) {
+      toast.success(`${draft.length} skin${draft.length !== 1 ? "s" : ""} saved`);
+    } else {
+      toast.error("Failed to save skins");
+    }
     onClose();
   }
 

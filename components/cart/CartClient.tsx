@@ -8,6 +8,7 @@ import { useCart } from "@/contexts/CartContext";
 import { RANK_COLORS } from "@/utils/products";
 import { ROUTE_SHOP_PRODUCTS } from "@/utils/routes";
 import ScrollReveal from "@/components/ui/ScrollReveal";
+import { FURY_VALORANT } from "@/utils/config";
 
 // ── Availability check ────────────────────────────────────────────────────────
 
@@ -55,15 +56,17 @@ export default function CartClient() {
   function removeUnavailable() {
     unavailableIds.forEach((id) => removeFromCart(id));
   }
-
+  console.log("items",items)
   function generateWhatsAppMessage() {
     if (!items.length) return "";
+    
     let msg = "Hi TEAM FURY! I want to purchase the following accounts:\n\n";
     items.forEach((item, i) => {
       msg += `${i + 1}. ${item.title}\n`;
       msg += `   • Rank: ${item.current_rank} (Peak: ${item.peak_rank})\n`;
       msg += `   • Skins: ${item.skins} | Knives: ${item.knives}\n`;
       msg += `   • Price: ₹${item.discounted_price.toLocaleString("en-IN")}\n\n`;
+      msg += `   • Account URL: ${FURY_VALORANT}/shop/${item.slug}\n\n`;
     });
     msg += `Total: ₹${totalPrice.toLocaleString("en-IN")} (${totalItems} account${totalItems > 1 ? "s" : ""})\n\n`;
     msg += "Please confirm availability and send payment details. Thank you!";

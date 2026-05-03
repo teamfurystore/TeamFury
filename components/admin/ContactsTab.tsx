@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchAdminContacts, deleteContact, type Contact } from "@/features/contacts/contactsSlice";
 import AdminTable from "./AdminTable";
@@ -20,7 +21,12 @@ export default function ContactsTab() {
 
   async function handleDelete() {
     if (!deleteTarget) return;
-    await dispatch(deleteContact(deleteTarget.id));
+    const result = await dispatch(deleteContact(deleteTarget.id));
+    if (deleteContact.fulfilled.match(result)) {
+      toast.success(`Message from "${deleteTarget.name}" deleted`);
+    } else {
+      toast.error("Failed to delete message");
+    }
     setDeleteTarget(null);
   }
 
