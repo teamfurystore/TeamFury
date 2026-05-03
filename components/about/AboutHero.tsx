@@ -47,7 +47,7 @@ export default function AboutHero() {
         {/* Chunked video */}
         <video
           ref={videoRef}
-          src="/api/video/ValoClip.mp4"
+          src="/ValoClip.mp4"
           autoPlay loop muted playsInline preload="metadata"
           className={`absolute inset-0 w-full h-full object-cover transition-all duration-2000 ${loaded ? "scale-100 opacity-100" : "scale-105 opacity-0"}`}
         />
