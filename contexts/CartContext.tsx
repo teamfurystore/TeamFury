@@ -1,16 +1,15 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { Product } from "@/utils/products";
+import { type DbProduct } from "@/features/products/productsSlice";
 
-// One account per product — no quantity
-export interface CartItem extends Product {
+export interface CartItem extends DbProduct {
   addedAt: string;
 }
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (product: Product) => void;
+  addToCart: (product: DbProduct) => void;
   removeFromCart: (productId: string) => void;
   clearCart: () => void;
   isInCart: (productId: string) => boolean;
@@ -40,9 +39,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (!isLoading) localStorage.setItem("teamfury-cart", JSON.stringify(items));
   }, [items, isLoading]);
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: DbProduct) => {
     setItems((prev) => {
-      // Already in cart — no duplicates
       if (prev.some((i) => i.id === product.id)) return prev;
       return [...prev, { ...product, addedAt: new Date().toISOString() }];
     });
@@ -56,7 +54,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const isInCart = (productId: string) => items.some((i) => i.id === productId);
 
   const totalItems = items.length;
-  const totalPrice = items.reduce((sum, i) => sum + i.discountedPrice, 0);
+  const totalPrice = items.reduce((sum, i) => sum + i.discounted_price, 0);
 
   return (
     <CartContext.Provider

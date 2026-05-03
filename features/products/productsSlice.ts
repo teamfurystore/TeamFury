@@ -1,62 +1,87 @@
-import { FURY_VALORANT } from "@/utils/config";
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
+import { ROUTE_SHOP_PRODUCTS } from "@/utils/routes";
+import { type Rank } from "@/utils/products";
 
-const CURD_FURY_PRODUCT = `${FURY_VALORANT || ""}/api/products`;
+// ── DB product shape (snake_case, matches Supabase) ───────────────────────────
 
-export interface FaqDetail {
-  domainName: string;
-  subDomainName: string;
+export interface DbProduct {
+  id: string;
+  slug: string;
+  title: string;
+  image: string;
+  profile_url: string;
+  price: number;
+  discounted_price: number;
+  badge: string | null;
+  current_rank: Rank;
+  peak_rank: Rank;
+  skins: number;
+  knives: number;
+  battle_passes: number;
+  region: string;
+  level: number;
+  verified: boolean;
+  instant_delivery: boolean;
+  description: string;
+  created_at: string;
 }
 
-interface FaqState {
-  faqDetailData: null;
+// ── State ─────────────────────────────────────────────────────────────────────
+
+interface ProductsState {
+  list: DbProduct[];
   loading: boolean;
-  errMessage: string | undefined;
-  selectedData?: any;
+  error: string | null;
 }
 
-const initialState: FaqState = {
-  faqDetailData: null,
+const initialState: ProductsState = {
+  list: [],
   loading: false,
-  errMessage: undefined,
-  selectedData: null,
+  error: null,
 };
 
-export const faqDetails = createAsyncThunk<any, FaqDetail>("Faq/faqDetails", async (params: FaqDetail) => {
-  const response = await axios.get(`${CURD_FURY_PRODUCT}`, {
-    params,
-    withCredentials: true,
-  });
-  return response.data;
+// ── Thunk ─────────────────────────────────────────────────────────────────────
+
+export const fetchShopProducts = createAsyncThunk<
+  DbProduct[],
+  void,
+  { rejectValue: string }
+>("products/fetchShop", async (_, { rejectWithValue }) => {
+  try {
+    const { data } = await axios.get<{ success: boolean; data: DbProduct[] }>(
+      ROUTE_SHOP_PRODUCTS
+    );
+    return data.data;
+  } catch (err: unknown) {
+    const msg = axios.isAxiosError(err)
+      ? err.response?.data?.error ?? err.message
+      : "Failed to load products";
+    return rejectWithValue(msg);
+  }
 });
 
+// ── Slice ─────────────────────────────────────────────────────────────────────
+
 const productsSlice = createSlice({
-  name: "Products",
+  name: "products",
   initialState,
-  reducers: {
-    setSelectedData(state, action) {
-      state.selectedData = action.payload;
-    },
-    clearSelectedData(state) {
-    state.selectedData = null;
-  }
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
-      .addCase(faqDetails.pending, (state) => {
+      .addCase(fetchShopProducts.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
-      .addCase(faqDetails.fulfilled, (state, action) => {
+      .addCase(fetchShopProducts.fulfilled, (state, action) => {
         state.loading = false;
-        state.faqDetailData = action.payload;
+        state.list = action.payload;
       })
-      .addCase(faqDetails.rejected, (state, action) => {
+      .addCase(fetchShopProducts.rejected, (state, action) => {
         state.loading = false;
-        state.errMessage = action.payload instanceof Error ? action.payload.message : String(action.payload);
+        state.error = action.payload ?? "Unknown error";
       });
   },
 });
 
-export const { setSelectedData ,clearSelectedData } = productsSlice.actions;
 export default productsSlice.reducer;
