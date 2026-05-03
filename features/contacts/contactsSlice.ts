@@ -27,15 +27,13 @@ export interface ContactSubmitPayload {
 }
 
 interface ContactsState {
-  // Public
   submitLoading: boolean;
   submitError: string | null;
   submitSuccess: boolean;
-  // Admin
   list: Contact[];
   listLoading: boolean;
   listError: string | null;
-  deleteLoading: string | null; // holds the id being deleted
+  deleteLoading: string | null;
 }
 
 const initialState: ContactsState = {
@@ -48,21 +46,29 @@ const initialState: ContactsState = {
   deleteLoading: null,
 };
 
+// ── Helper ────────────────────────────────────────────────────────────────────
+function extractError(err: unknown, fallback: string): string {
+  if (err && typeof err === "object" && "response" in err) {
+    const res = (err as { response?: { status?: number; data?: { error?: string } } }).response;
+    if (res?.status === 401) return "Session expired — please log in again.";
+    return res?.data?.error ?? fallback;
+  }
+  return fallback;
+}
+
 // ── Thunks ────────────────────────────────────────────────────────────────────
 
-/** Public — submit contact form */
 export const submitContact = createAsyncThunk<void, ContactSubmitPayload>(
   "contacts/submit",
   async (payload, { rejectWithValue }) => {
     try {
       await axiosInstance.post(ROUTE_CONTACT_SUBMIT, payload);
-    } catch (err: any) {
-      return rejectWithValue(err.response?.data?.error ?? "Failed to send message");
+    } catch (err) {
+      return rejectWithValue(extractError(err, "Failed to send message"));
     }
   }
 );
 
-/** Admin — fetch all contact submissions */
 export const fetchAdminContacts = createAsyncThunk<Contact[]>(
   "contacts/fetchAll",
   async (_, { rejectWithValue }) => {
@@ -71,23 +77,20 @@ export const fetchAdminContacts = createAsyncThunk<Contact[]>(
       return data.sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
-    } catch (err: any) {
-      const status = err.response?.status;
-      if (status === 401) return rejectWithValue("Session expired — please log in again.");
-      return rejectWithValue(err.response?.data?.error ?? "Failed to load contacts");
+    } catch (err) {
+      return rejectWithValue(extractError(err, "Failed to load contacts"));
     }
   }
 );
 
-/** Admin — delete a contact submission */
 export const deleteContact = createAsyncThunk<string, string>(
   "contacts/delete",
   async (id, { rejectWithValue }) => {
     try {
       await axiosInstance.delete(ROUTE_ADMIN_CONTACT_DELETE(id));
       return id;
-    } catch (err: any) {
-      return rejectWithValue(err.response?.data?.error ?? "Delete failed");
+    } catch (err) {
+      return rejectWithValue(extractError(err, "Delete failed"));
     }
   }
 );
