@@ -152,3 +152,5 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ success: false, error: "Failed to delete skins" }, { status: 500 });
   }
 }
+
+
