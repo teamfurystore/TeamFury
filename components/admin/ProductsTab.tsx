@@ -100,12 +100,34 @@ export default function ProductsTab() {
   // Image state — file is the new upload, preview is what's shown in the form
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [compressing, setCompressing] = useState(false);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
+
+    setCompressing(true);
+    try {
+      const imageCompression = (await import("browser-image-compression")).default;
+      const compressed = await imageCompression(file, {
+        maxSizeMB: 1,          // target ≤ 1 MB
+        maxWidthOrHeight: 1080, // never wider than 1080px
+        useWebWorker: true,
+        fileType: "image/webp",
+      });
+      setImageFile(compressed);
+      setImagePreview(URL.createObjectURL(compressed));
+      toast.success(
+        `Image compressed: ${(file.size / 1024 / 1024).toFixed(1)} MB → ${(compressed.size / 1024 / 1024).toFixed(2)} MB`
+      );
+    } catch {
+      // Compression failed — fall back to original file
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+      toast.error("Compression failed, using original file");
+    } finally {
+      setCompressing(false);
+    }
   };
 
   // ── Data loading ────────────────────────────────────────────────────────────
@@ -177,7 +199,7 @@ export default function ProductsTab() {
     setSaving(true);
     setSavingId(editId ?? "new");
     try {
-    const payload = { ...coerceForm(form), badge: form.badge || null };
+      const payload = { ...coerceForm(form), badge: form.badge || null };
       const formdata = new FormData();
 
       if (editId) {
@@ -297,13 +319,11 @@ export default function ProductsTab() {
           onClick={() => handleToggle(row)}
           disabled={togglingId === row.id || savingId === row.id}
           title={row.active ? "Click to unpublish" : "Click to publish"}
-          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
-            row.active ? "bg-emerald-500" : "bg-white/15"
-          }`}
+          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50 ${row.active ? "bg-emerald-500" : "bg-white/15"
+            }`}
         >
-          <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-            row.active ? "translate-x-4" : "translate-x-1"
-          }`} />
+          <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200 ${row.active ? "translate-x-4" : "translate-x-1"
+            }`} />
         </button>
       ),
     },
@@ -375,6 +395,7 @@ export default function ProductsTab() {
             saving={saving}
             isEdit={modal === "edit"}
             imagePreview={imagePreview}
+            compressing={compressing}
             handleImageChange={handleFileChange}
           />
         </AdminModal>
@@ -410,6 +431,7 @@ function ProductForm({
   saving,
   isEdit,
   imagePreview,
+  compressing,
   handleImageChange,
 }: {
   form: FormState;
@@ -418,6 +440,7 @@ function ProductForm({
   saving: boolean;
   isEdit: boolean;
   imagePreview: string | null;
+  compressing: boolean;
   handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
   const set = (k: keyof FormState, v: unknown) => onChange({ ...form, [k]: v });
@@ -433,21 +456,30 @@ function ProductForm({
       {/* Thumbnail — required on add, optional on edit */}
       <Field label={isEdit ? "Thumbnail Image (leave blank to keep current)" : "Thumbnail Image *"}>
         {/* Show current / newly picked preview */}
-        {imagePreview && (
-          <div className="w-full  max-h-[30vh] rounded-xl overflow-hidden bg-white/5 border border-white/10 mb-1">
-            <img
-              src={imagePreview}
-              alt="Thumbnail preview"
-              className="w-full h-full object-cover"
-            />
+        {imagePreview && !compressing && (
+          <div className="w-full max-h-[30vh] rounded-xl overflow-hidden bg-white/5 border border-white/10 mb-1">
+            <img src={imagePreview} alt="Thumbnail preview" className="w-full h-full object-cover" />
+          </div>
+        )}
+        {compressing && (
+          <div className="w-full h-24 rounded-xl bg-white/5 border border-white/10 mb-1 flex items-center justify-center gap-2 text-white/40 text-xs">
+            <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+            </svg>
+            Compressing image…
           </div>
         )}
         <input
           type="file"
           accept="image/*"
           onChange={handleImageChange}
-          className={inp}
+          disabled={compressing}
+          className={`${inp} disabled:opacity-50 disabled:cursor-not-allowed`}
         />
+        <p className="text-[10px] text-white/25 mt-1">
+          Automatically compressed to ≤ 1 MB · 1080px max width
+        </p>
       </Field>
 
       <Field label="Title *">
@@ -464,7 +496,7 @@ function ProductForm({
           <input type="number" value={form.price ?? ""} onChange={num("price")} className={inp} />
         </Field>
         <Field label="Sale Price (₹)">
-          <input type="number" value={form.discounted_price?? ""} onChange={num("discounted_price")} className={inp} />
+          <input type="number" value={form.discounted_price ?? ""} onChange={num("discounted_price")} className={inp} />
         </Field>
       </div>
 
@@ -483,13 +515,13 @@ function ProductForm({
 
       <div className="grid grid-cols-3 gap-3">
         <Field label="Skins">
-          <input type="number" value={form.skins?? ""} onChange={num("skins")} className={inp} />
+          <input type="number" value={form.skins ?? ""} onChange={num("skins")} className={inp} />
         </Field>
         <Field label="Knives">
-          <input type="number" value={form.knives?? ""} onChange={num("knives")} className={inp} />
+          <input type="number" value={form.knives ?? ""} onChange={num("knives")} className={inp} />
         </Field>
         <Field label="Battle Passes">
-          <input type="number" value={form.battle_passes?? ""} onChange={num("battle_passes")} className={inp} />
+          <input type="number" value={form.battle_passes ?? ""} onChange={num("battle_passes")} className={inp} />
         </Field>
       </div>
 
@@ -534,10 +566,10 @@ function ProductForm({
 
       <button
         onClick={onSave}
-        disabled={saving || !form.title || !form.slug}
+        disabled={saving || compressing || !form.title || !form.slug}
         className="mt-1 bg-white text-[#0f0f0f] hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed font-semibold py-2.5 rounded-xl transition-colors text-sm"
       >
-        {saving ? "Saving…" : isEdit ? "Update Product" : "Save Product"}
+        {compressing ? "Compressing image…" : saving ? "Saving…" : isEdit ? "Update Product" : "Save Product"}
       </button>
     </div>
   );
@@ -577,9 +609,9 @@ function Btn({ children, onClick, disabled, variant = "ghost" }: {
   variant?: "ghost" | "primary" | "danger";
 }) {
   const s = {
-    ghost:   "text-white/50 hover:text-white border border-white/10 hover:border-white/20 hover:bg-white/5",
+    ghost: "text-white/50 hover:text-white border border-white/10 hover:border-white/20 hover:bg-white/5",
     primary: "text-white bg-white/10 hover:bg-white/15 border border-white/10",
-    danger:  "text-red-400 hover:text-red-300 border border-red-500/15 hover:border-red-500/30 hover:bg-red-500/5",
+    danger: "text-red-400 hover:text-red-300 border border-red-500/15 hover:border-red-500/30 hover:bg-red-500/5",
   };
   return (
     <button onClick={onClick} disabled={disabled}
