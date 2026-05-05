@@ -18,6 +18,9 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
+  icons: {
+    icon: '/teamFuryIcon.svg',
+  },
   title: "TEAM FURY | Premium Valorant Accounts",
   description:
     "Get your dream Valorant account with exclusive skins, rare knives, and premium collections.",
