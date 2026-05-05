@@ -54,11 +54,10 @@ const SkinCard = ({
     <button
       type="button"
       onClick={() => onToggle(skin)}
-      className={`relative group flex flex-col gap-2 p-2.5 rounded-xl border transition-all duration-150 text-left w-full h-full focus:outline-none ${
-        selected
-          ? "border-red-500/60 bg-red-500/8 ring-1 ring-red-500/25"
-          : `${tierBorder(skin.contentTierUuid)} bg-white/3 hover:bg-white/6 hover:border-white/25`
-      }`}
+      className={`relative group flex flex-col gap-2 p-2.5 rounded-xl border transition-all duration-150 text-left w-full h-full focus:outline-none ${selected
+        ? "border-red-500/60 bg-red-500/8 ring-1 ring-red-500/25"
+        : `${tierBorder(skin.contentTierUuid)} bg-white/3 hover:bg-white/6 hover:border-white/25`
+        }`}
     >
       {selected && (
         <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-red-500 flex items-center justify-center z-10">
@@ -253,7 +252,7 @@ export default function SkinPickerPopup({ productId, productName, onClose }: Pro
         {/* ── Header ── */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/8 shrink-0">
           <div>
-            <h2 className="text-sm font-semibold text-white">Select Skins</h2>
+            <h2 className="text-sm font-semibold text-white">Select Skins </h2>
             {productName && <p className="text-xs text-white/40 mt-0.5">{productName}</p>}
           </div>
           <div className="flex items-center gap-3">
@@ -352,7 +351,7 @@ export default function SkinPickerPopup({ productId, productName, onClose }: Pro
                   key={s.uuid}
                   className="flex items-center gap-1 text-[11px] bg-white/6 border border-white/10 text-white/65 px-2 py-0.5 rounded-full shrink-0"
                 >
-                  {s.displayName.split(" ").slice(1).join(" ") || s.displayName}
+                  {s.displayName}
                   <button
                     type="button"
                     onClick={() => setDraft((prev) => prev.filter((x) => x.uuid !== s.uuid))}

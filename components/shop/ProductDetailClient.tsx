@@ -96,9 +96,8 @@ function SkinLightbox({
                 <button
                   key={i}
                   onClick={() => setIdx(i)}
-                  className={`w-1.5 h-1.5 rounded-full transition-all ${
-                    i === idx ? "bg-red-500 w-3" : "bg-white/20 hover:bg-white/40"
-                  }`}
+                  className={`w-1.5 h-1.5 rounded-full transition-all ${i === idx ? "bg-red-500 w-3" : "bg-white/20 hover:bg-white/40"
+                    }`}
                 />
               ))}
               {skins.length > 10 && (
@@ -186,18 +185,19 @@ export default function ProductDetailClient({ product, related }: Props) {
   const { addToCart, isInCart } = useCart();
   const inCart = isInCart(product.id);
 
-  const discount = product.price > 0
+  const hasDiscount = product.price > 0 && product.price > product.discounted_price;
+  const discount = hasDiscount
     ? Math.round(((product.price - product.discounted_price) / product.price) * 100)
     : 0;
 
   const stats = [
-    { label: "Current Rank",  value: product.current_rank,  color: RANK_COLORS[product.current_rank] },
-    { label: "Peak Rank",     value: product.peak_rank,     color: RANK_COLORS[product.peak_rank] },
+    { label: "Current Rank", value: product.current_rank, color: RANK_COLORS[product.current_rank] },
+    { label: "Peak Rank", value: product.peak_rank, color: RANK_COLORS[product.peak_rank] },
     { label: "Account Level", value: `Lv. ${product.level}`, color: "text-white" },
     { label: "Premium Skins", value: `${product.skins} skins`, color: "text-purple-400" },
-    { label: "Rare Knives",   value: `${product.knives} knives`, color: "text-red-400" },
+    { label: "Rare Knives", value: `${product.knives} knives`, color: "text-red-400" },
     { label: "Battle Passes", value: `${product.battle_passes} passes`, color: "text-blue-400" },
-    { label: "Region",        value: product.region, color: "text-cyan-400" },
+    { label: "Region", value: product.region, color: "text-cyan-400" },
     {
       label: "Delivery",
       value: product.instant_delivery ? "Instant (< 5 min)" : "Within 24h",
@@ -232,7 +232,7 @@ export default function ProductDetailClient({ product, related }: Props) {
                   {product.badge}
                 </span>
               )}
-              {discount > 0 && (
+              {hasDiscount && (
                 <span className="bg-yellow-500 text-black text-xs font-extrabold px-3 py-1 rounded-full">
                   -{discount}% OFF
                 </span>
@@ -270,10 +270,12 @@ export default function ProductDetailClient({ product, related }: Props) {
               <span className="text-4xl font-extrabold text-white">
                 ₹{product.discounted_price.toLocaleString("en-IN")}
               </span>
-              <span className="text-lg text-white/30 line-through">
-                ₹{product.price.toLocaleString("en-IN")}
-              </span>
-              {discount > 0 && (
+              {hasDiscount && (
+                <span className="text-lg text-white/30 line-through">
+                  ₹{product.price.toLocaleString("en-IN")}
+                </span>
+              )}
+              {hasDiscount && (
                 <span className="bg-emerald-600/15 text-emerald-400 text-sm font-semibold px-3 py-1 rounded-full border border-emerald-500/20">
                   Save ₹{(product.price - product.discounted_price).toLocaleString("en-IN")}
                 </span>
@@ -302,11 +304,10 @@ export default function ProductDetailClient({ product, related }: Props) {
               <button
                 onClick={() => !inCart && addToCart(product)}
                 disabled={inCart}
-                className={`w-full flex items-center justify-center gap-2 font-bold py-4 rounded-full transition-all text-sm active:scale-95 disabled:cursor-default ${
-                  inCart
-                    ? "bg-emerald-600/20 border border-emerald-500/30 text-emerald-400"
-                    : "bg-red-600 hover:bg-red-500 text-white"
-                }`}
+                className={`w-full flex items-center justify-center gap-2 font-bold py-4 rounded-full transition-all text-sm active:scale-95 disabled:cursor-default ${inCart
+                  ? "bg-emerald-600/20 border border-emerald-500/30 text-emerald-400"
+                  : "bg-red-600 hover:bg-red-500 text-white"
+                  }`}
               >
                 <AnimatePresence mode="wait" initial={false}>
                   {inCart ? (
