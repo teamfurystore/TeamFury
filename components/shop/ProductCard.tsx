@@ -17,7 +17,8 @@ export default function ProductCard({ product }: Props) {
   const inCart = isInCart(product.id);
   const [justAdded, setJustAdded] = useState(false);
 
-  const discount = product.price > 0
+  const hasDiscount = product.price > 0 && product.price > product.discounted_price;
+  const discount = hasDiscount
     ? Math.round(((product.price - product.discounted_price) / product.price) * 100)
     : 0;
 
@@ -63,8 +64,7 @@ export default function ProductCard({ product }: Props) {
           <span className="absolute top-3 right-3 bg-yellow-500 text-black text-[10px] font-extrabold px-2 py-1 rounded-full">
             -{discount}%
           </span>
-        )}
-      </div>
+        )}      </div>
 
       {/* Body */}
       <div className="flex flex-col gap-3 p-4 flex-1">
@@ -88,9 +88,11 @@ export default function ProductCard({ product }: Props) {
           <span className="text-xl font-extrabold text-white">
             ₹{product.discounted_price.toLocaleString("en-IN")}
           </span>
-          <span className="text-sm text-white/30 line-through">
-            ₹{product.price.toLocaleString("en-IN")}
-          </span>
+          {hasDiscount && (
+            <span className="text-sm text-white/30 line-through">
+              ₹{product.price.toLocaleString("en-IN")}
+            </span>
+          )}
         </div>
 
         {/* Actions */}
@@ -105,11 +107,10 @@ export default function ProductCard({ product }: Props) {
           <button
             onClick={handleAdd}
             disabled={inCart}
-            className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold py-2.5 rounded-full transition-all active:scale-95 disabled:cursor-default ${
-              inCart
-                ? "bg-emerald-600/20 border border-emerald-500/30 text-emerald-400"
-                : "bg-red-600 hover:bg-red-500 text-white"
-            }`}
+            className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold py-2.5 rounded-full transition-all active:scale-95 disabled:cursor-default ${inCart
+              ? "bg-emerald-600/20 border border-emerald-500/30 text-emerald-400"
+              : "bg-red-600 hover:bg-red-500 text-white"
+              }`}
           >
             <AnimatePresence mode="wait" initial={false}>
               {inCart ? (

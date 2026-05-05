@@ -196,6 +196,13 @@ export default function ProductsTab() {
   // ── Save (create or update) ─────────────────────────────────────────────────
 
   async function handleSave() {
+    // Validate required fields
+    const salePrice = Number(form.discounted_price);
+    if (!salePrice || salePrice <= 0) {
+      toast.error("Sale Price is required and must be greater than 0");
+      return;
+    }
+
     setSaving(true);
     setSavingId(editId ?? "new");
     try {
@@ -290,12 +297,21 @@ export default function ProductsTab() {
     {
       key: "price",
       label: "Price",
-      render: (row: Product) => (
-        <span className="flex items-center gap-1.5">
-          <span className="line-through text-white/25 text-xs">₹{row.price.toLocaleString()}</span>
-          <span className="text-emerald-400 font-medium">₹{row.discounted_price.toLocaleString()}</span>
-        </span>
-      ),
+      render: (row: Product) => {
+        const hasDiscount = row.price > 0 && row.price > row.discounted_price;
+        return (
+          <span className="flex items-center gap-1.5">
+            {hasDiscount && (
+              <span className="line-through text-white/25 text-xs">
+                ₹{row.price.toLocaleString()}
+              </span>
+            )}
+            <span className="text-emerald-400 font-medium">
+              ₹{row.discounted_price.toLocaleString()}
+            </span>
+          </span>
+        );
+      },
     },
     { key: "current_rank", label: "Rank" },
     { key: "skins", label: "Skins" },
@@ -493,10 +509,20 @@ function ProductForm({
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Original Price (₹)">
-          <input type="number" value={form.price ?? ""} onChange={num("price")} className={inp} />
+          <input type="number" value={form.price ?? ""} onChange={num("price")} className={inp}
+            placeholder="e.g. 2999" />
         </Field>
-        <Field label="Sale Price (₹)">
-          <input type="number" value={form.discounted_price ?? ""} onChange={num("discounted_price")} className={inp} />
+        <Field label="Sale Price (₹) *">
+          <input
+            type="number"
+            value={form.discounted_price ?? ""}
+            onChange={num("discounted_price")}
+            className={`${inp} ${!form.discounted_price ? "border-red-500/40 focus:ring-red-500/30" : ""}`}
+            placeholder="Required"
+          />
+          {!form.discounted_price && (
+            <p className="text-[10px] text-red-400 mt-0.5">Sale price is required</p>
+          )}
         </Field>
       </div>
 
@@ -566,7 +592,7 @@ function ProductForm({
 
       <button
         onClick={onSave}
-        disabled={saving || compressing || !form.title || !form.slug}
+        disabled={saving || compressing || !form.title || !form.slug || !form.discounted_price}
         className="mt-1 bg-white text-[#0f0f0f] hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed font-semibold py-2.5 rounded-xl transition-colors text-sm"
       >
         {compressing ? "Compressing image…" : saving ? "Saving…" : isEdit ? "Update Product" : "Save Product"}
