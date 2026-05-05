@@ -495,8 +495,15 @@ function ProductForm({
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Region">
-          <input value={form.region} onChange={(e) => set("region", e.target.value)}
-            className={inp} placeholder="India" />
+          <select
+            value={form.region}
+            onChange={(e) => set("region", e.target.value)}
+            className={sel}
+          >
+            <option value="India">India</option>
+            <option value="Philippines">Philippines</option>
+            <option value="Others">Others</option>
+          </select>
         </Field>
         <Field label="Level">
           <input type="number" value={form.level} onChange={num("level")} className={inp} />

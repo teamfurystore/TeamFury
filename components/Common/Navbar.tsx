@@ -6,6 +6,7 @@ import { ShoppingCart, Menu, X } from "lucide-react";
 import { SITE_CONFIG, NAV_LINKS } from "@/utils/config";
 import { useCart } from "@/contexts/CartContext";
 import { useTransition } from "@/contexts/TransitionContext";
+import Image from "next/image";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -28,6 +29,7 @@ export default function Navbar() {
           onClick={() => go("/")}
           className="text-red-500 font-extrabold text-xl tracking-widest uppercase hover:text-red-400 transition-colors"
         >
+          {/* <Image src="/teamFuryIcon.svg" alt="teamFury" width={80} height={20}/> */}
           {SITE_CONFIG.name}
         </button>
 
@@ -40,11 +42,10 @@ export default function Navbar() {
                 key={link.href}
                 onClick={() => go(link.href)}
                 disabled={isTransitioning}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors disabled:pointer-events-none ${
-                  isActive
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors disabled:pointer-events-none ${isActive
                     ? "text-white bg-white/10"
                     : "text-white/60 hover:text-white hover:bg-white/5"
-                }`}
+                  }`}
               >
                 {link.label}
               </button>
@@ -90,11 +91,10 @@ export default function Navbar() {
                 key={link.href}
                 onClick={() => go(link.href)}
                 disabled={isTransitioning}
-                className={`px-4 py-3 rounded-xl text-sm font-medium text-left transition-colors disabled:pointer-events-none ${
-                  isActive
+                className={`px-4 py-3 rounded-xl text-sm font-medium text-left transition-colors disabled:pointer-events-none ${isActive
                     ? "text-white bg-white/10"
                     : "text-white/60 hover:text-white hover:bg-white/5"
-                }`}
+                  }`}
               >
                 {link.label}
               </button>

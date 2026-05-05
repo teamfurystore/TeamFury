@@ -61,7 +61,7 @@ function ManifestoSection() {
           {lines.map((line, i) => (
             <div key={i} className="overflow-hidden">
               <motion.span
-                className={`block text-5xl md:text-7xl lg:text-8xl font-extrabold leading-tight ${
+                className={`block text-5xl md:text-7xl lg:text-8xl font-extrabold leading-tight px-4 ${
                   line.accent ? "text-red-500 animate-glow" : "text-white"
                 }`}
                 initial={{ y: "110%", opacity: 0 }}
