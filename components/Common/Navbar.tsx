@@ -10,7 +10,8 @@ import Image from "next/image";
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { totalItems } = useCart();
+  const { totalItems, vpTotalItems } = useCart();
+  const cartCount = totalItems + vpTotalItems;
   const { navigate, isTransitioning } = useTransition();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -43,8 +44,8 @@ export default function Navbar() {
                 onClick={() => go(link.href)}
                 disabled={isTransitioning}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors disabled:pointer-events-none ${isActive
-                    ? "text-white bg-white/10"
-                    : "text-white/60 hover:text-white hover:bg-white/5"
+                  ? "text-white bg-white/10"
+                  : "text-white/60 hover:text-white hover:bg-white/5"
                   }`}
               >
                 {link.label}
@@ -63,9 +64,9 @@ export default function Navbar() {
             className="relative flex items-center justify-center w-10 h-10 rounded-full border border-white/10 hover:border-red-500/50 hover:bg-white/5 transition-colors disabled:pointer-events-none"
           >
             <ShoppingCart size={18} className="text-white/70" />
-            {totalItems > 0 && (
+            {cartCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold min-w-4 h-4 px-1 rounded-full flex items-center justify-center animate-scale-in">
-                {totalItems > 99 ? "99+" : totalItems}
+                {cartCount > 99 ? "99+" : cartCount}
               </span>
             )}
           </button>
@@ -92,8 +93,8 @@ export default function Navbar() {
                 onClick={() => go(link.href)}
                 disabled={isTransitioning}
                 className={`px-4 py-3 rounded-xl text-sm font-medium text-left transition-colors disabled:pointer-events-none ${isActive
-                    ? "text-white bg-white/10"
-                    : "text-white/60 hover:text-white hover:bg-white/5"
+                  ? "text-white bg-white/10"
+                  : "text-white/60 hover:text-white hover:bg-white/5"
                   }`}
               >
                 {link.label}

@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Trash2, ShoppingBag, MessageCircle, AlertTriangle, RefreshCw } from "lucide-react";
+import { ArrowLeft, Trash2, ShoppingBag, MessageCircle, AlertTriangle, RefreshCw, Plus, Minus } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useCart } from "@/contexts/CartContext";
 import { RANK_COLORS } from "@/utils/products";
 import { ROUTE_SHOP_PRODUCTS } from "@/utils/routes";
+import { STORE_CONFIG, buildWhatsAppMessage } from "@/utils/vpStore";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { FURY_VALORANT } from "@/utils/config";
 
@@ -31,10 +32,13 @@ async function checkAvailability(ids: string[]): Promise<ValidityMap> {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function CartClient() {
-  const { items, removeFromCart, clearCart, totalPrice, totalItems } = useCart();
+  const { items, removeFromCart, clearCart, totalPrice, totalItems,
+    vpItems, addVPItem, removeVPItem, removeAllVPItem, clearVPCart,
+    vpTotalItems, vpTotalPrice, vpTotalVP } = useCart();
 
   const [validity, setValidity] = useState<ValidityMap>({});
   const [checking, setChecking] = useState(false);
+  const [riotId, setRiotId] = useState("");
 
   // Check availability whenever cart items change
   useEffect(() => {
@@ -44,38 +48,64 @@ export default function CartClient() {
       setValidity(map);
       setChecking(false);
     });
-  }, [items.length]); // re-run when count changes (add / remove)
+  }, [items.length]);
 
   const unavailableIds = Object.entries(validity)
     .filter(([, ok]) => !ok)
     .map(([id]) => id);
 
   const hasUnavailable = unavailableIds.length > 0;
-  const canCheckout = !checking && !hasUnavailable && items.length > 0;
+  const hasAccounts = items.length > 0;
+  const hasVP = vpItems.length > 0;
+  const riotIdValid = riotId.trim().includes("#") && riotId.trim().length > 3;
+
+  // Checkout is ready when:
+  // - not still checking availability
+  // - no unavailable account items
+  // - at least one item exists
+  // - if VP items present, Riot ID must be filled
+  const canCheckout =
+    !checking &&
+    !hasUnavailable &&
+    (hasAccounts || hasVP) &&
+    (!hasVP || riotIdValid);
 
   function removeUnavailable() {
     unavailableIds.forEach((id) => removeFromCart(id));
   }
-  console.log("items",items)
-  function generateWhatsAppMessage() {
-    if (!items.length) return "";
-    
-    let msg = "Hi TEAM FURY! I want to purchase the following accounts:\n\n";
-    items.forEach((item, i) => {
-      msg += `${i + 1}. ${item.title}\n`;
-      msg += `   • Rank: ${item.current_rank} (Peak: ${item.peak_rank})\n`;
-      msg += `   • Skins: ${item.skins} | Knives: ${item.knives}\n`;
-      msg += `   • Price: ₹${item.discounted_price.toLocaleString("en-IN")}\n\n`;
-      msg += `   • Account URL: ${FURY_VALORANT}/shop/${item.slug}\n\n`;
-    });
-    msg += `Total: ₹${totalPrice.toLocaleString("en-IN")} (${totalItems} account${totalItems > 1 ? "s" : ""})\n\n`;
+
+  function buildCombinedWhatsAppMessage() {
+    let msg = "Hi TEAM FURY! I want to place the following order:\n\n";
+
+    if (hasAccounts) {
+      msg += "🎮 *Valorant Accounts:*\n";
+      items.forEach((item, i) => {
+        msg += `${i + 1}. ${item.title}\n`;
+        msg += `   • Rank: ${item.current_rank} (Peak: ${item.peak_rank})\n`;
+        msg += `   • Skins: ${item.skins} | Knives: ${item.knives}\n`;
+        msg += `   • Price: ₹${item.discounted_price.toLocaleString("en-IN")}\n`;
+        msg += `   • URL: ${FURY_VALORANT}/shop/${item.slug}\n\n`;
+      });
+      msg += `Accounts subtotal: ₹${totalPrice.toLocaleString("en-IN")} (${totalItems} account${totalItems > 1 ? "s" : ""})\n\n`;
+    }
+
+    if (hasVP) {
+      msg += "💎 *Valorant Points:*\n";
+      msg += `🎮 Riot ID: ${riotId.trim()}\n`;
+      vpItems.forEach((item) => {
+        msg += `  • ${item.pkg.vp.toLocaleString()} ${item.pkg.label} × ${item.qty} = ₹${(item.pkg.price * item.qty).toLocaleString("en-IN")}\n`;
+      });
+      msg += `VP subtotal: ₹${vpTotalPrice.toLocaleString("en-IN")} (${vpTotalVP.toLocaleString()} VP)\n\n`;
+    }
+
+    msg += `💰 *Grand Total: ₹${(totalPrice + vpTotalPrice).toLocaleString("en-IN")}*\n\n`;
     msg += "Please confirm availability and send payment details. Thank you!";
     return encodeURIComponent(msg);
   }
 
   // ── Empty state ─────────────────────────────────────────────────────────────
 
-  if (items.length === 0) {
+  if (items.length === 0 && vpItems.length === 0) {
     return (
       <div className="max-w-4xl mx-auto px-6 py-24 text-center">
         <ScrollReveal direction="scale" duration={0.6}>
@@ -110,10 +140,15 @@ export default function CartClient() {
           <div>
             <h1 className="text-2xl font-extrabold">Cart</h1>
             <p className="text-white/40 text-sm mt-0.5">
-              {totalItems} account{totalItems > 1 ? "s" : ""} selected
+              {totalItems > 0 && `${totalItems} account${totalItems > 1 ? "s" : ""}`}
+              {totalItems > 0 && vpTotalItems > 0 && " · "}
+              {vpTotalItems > 0 && `${vpTotalItems} VP item${vpTotalItems > 1 ? "s" : ""}`}
             </p>
           </div>
-          <button onClick={clearCart} className="text-xs text-white/30 hover:text-red-400 transition-colors">
+          <button
+            onClick={() => { clearCart(); clearVPCart(); }}
+            className="text-xs text-white/30 hover:text-red-400 transition-colors"
+          >
             Clear all
           </button>
         </div>
@@ -152,8 +187,13 @@ export default function CartClient() {
 
       <div className="max-w-6xl mx-auto px-6 pb-20 grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-        {/* Items */}
+        {/* ── Account items ── */}
         <div className="lg:col-span-2 flex flex-col gap-3">
+          {items.length > 0 && (
+            <p className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-1">
+              🎮 Valorant Accounts
+            </p>
+          )}
           <AnimatePresence initial={false}>
             {items.map((item) => {
               const isUnavailable = validity[item.id] === false;
@@ -169,11 +209,10 @@ export default function CartClient() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: -40, transition: { duration: 0.25 } }}
                   transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                  className={`relative bg-white/4 border rounded-2xl p-5 flex gap-4 transition-colors ${
-                    isUnavailable
-                      ? "border-amber-500/30 bg-amber-500/4"
-                      : "border-white/8 hover:border-white/15"
-                  }`}
+                  className={`relative bg-white/4 border rounded-2xl p-5 flex gap-4 transition-colors ${isUnavailable
+                    ? "border-amber-500/30 bg-amber-500/4"
+                    : "border-white/8 hover:border-white/15"
+                    }`}
                 >
                   {/* Unavailable overlay tag */}
                   {isUnavailable && (
@@ -184,9 +223,8 @@ export default function CartClient() {
                   )}
 
                   {/* Thumbnail */}
-                  <div className={`relative w-28 aspect-video bg-linear-to-br from-red-900/25 to-zinc-900 rounded-xl overflow-hidden flex items-center justify-center shrink-0 ${
-                    isUnavailable ? "opacity-40 grayscale" : ""
-                  }`}>
+                  <div className={`relative w-28 aspect-video bg-linear-to-br from-red-900/25 to-zinc-900 rounded-xl overflow-hidden flex items-center justify-center shrink-0 ${isUnavailable ? "opacity-40 grayscale" : ""
+                    }`}>
                     {item.image ? (
                       <img src={item.image} alt={item.title}
                         className="w-full h-full object-cover" loading="lazy" />
@@ -241,6 +279,61 @@ export default function CartClient() {
               );
             })}
           </AnimatePresence>
+
+          {/* ── VP items ── */}
+          {vpItems.length > 0 && (
+            <div className="flex flex-col gap-3 mt-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-white/40 uppercase tracking-widest">
+                  💎 Valorant Points
+                </p>
+              </div>
+
+              <AnimatePresence initial={false}>
+                {vpItems.map((item) => (
+                  <motion.div key={item.pkg.id} layout
+                    initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, x: -40, transition: { duration: 0.25 } }}
+                    transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                    className="bg-white/4 border border-white/8 rounded-2xl p-4 flex gap-4 hover:border-white/15 transition-colors"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/15 flex items-center justify-center shrink-0 text-2xl">
+                      {item.pkg.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-white">
+                        {item.pkg.vp.toLocaleString()} {item.pkg.label === "Battle Pass" ? "VP (Battle Pass)" : "VP"}
+                      </p>
+                      <p className="text-xs text-white/40 mt-0.5">
+                        ₹{item.pkg.price.toLocaleString("en-IN")} × {item.qty} ={" "}
+                        <span className="text-white/60 font-medium">₹{(item.pkg.price * item.qty).toLocaleString("en-IN")}</span>
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end justify-between shrink-0">
+                      <p className="text-lg font-extrabold text-white">
+                        ₹{(item.pkg.price * item.qty).toLocaleString("en-IN")}
+                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <button onClick={() => removeVPItem(item.pkg.id)}
+                          className="w-7 h-7 rounded-full border border-white/10 hover:border-red-500/30 flex items-center justify-center text-white/35 hover:text-red-400 transition-all">
+                          <Minus size={11} />
+                        </button>
+                        <span className="text-sm font-bold text-white w-5 text-center">{item.qty}</span>
+                        <button onClick={() => addVPItem(item.pkg)}
+                          className="w-7 h-7 rounded-full border border-white/10 hover:border-emerald-500/30 flex items-center justify-center text-white/35 hover:text-emerald-400 transition-all">
+                          <Plus size={11} />
+                        </button>
+                        <button onClick={() => removeAllVPItem(item.pkg.id)}
+                          className="w-7 h-7 rounded-full border border-white/8 hover:border-red-500/30 flex items-center justify-center text-white/25 hover:text-red-400 transition-all ml-1">
+                          <Trash2 size={11} />
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
         </div>
 
         {/* Summary */}
@@ -250,19 +343,46 @@ export default function CartClient() {
               <h3 className="font-semibold text-white mb-5">Order Summary</h3>
 
               <div className="flex flex-col gap-3 mb-5 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-white/50">Accounts ({totalItems})</span>
-                  <span className="text-white">₹{totalPrice.toLocaleString("en-IN")}</span>
-                </div>
+                {hasAccounts && (
+                  <div className="flex justify-between">
+                    <span className="text-white/50">Accounts ({totalItems})</span>
+                    <span className="text-white">₹{totalPrice.toLocaleString("en-IN")}</span>
+                  </div>
+                )}
+                {hasVP && (
+                  <div className="flex justify-between">
+                    <span className="text-white/50">VP ({vpTotalVP.toLocaleString()} VP)</span>
+                    <span className="text-white">₹{vpTotalPrice.toLocaleString("en-IN")}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-white/50">Delivery</span>
                   <span className="text-emerald-400 font-medium">Free</span>
                 </div>
                 <div className="border-t border-white/8 pt-3 flex justify-between font-bold">
                   <span>Total</span>
-                  <span className="text-xl text-white">₹{totalPrice.toLocaleString("en-IN")}</span>
+                  <span className="text-xl text-white">₹{(totalPrice + vpTotalPrice).toLocaleString("en-IN")}</span>
                 </div>
               </div>
+
+              {/* Riot ID — only shown when VP items are in cart */}
+              {hasVP && (
+                <div className="mb-4 flex flex-col gap-2">
+                  <label className="text-xs font-semibold text-white/60">
+                    Riot ID <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={riotId}
+                    onChange={(e) => setRiotId(e.target.value)}
+                    placeholder="PlayerName#TAG"
+                    className="w-full bg-white/5 border border-white/10 focus:border-red-500/50 focus:outline-none rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/20 font-mono transition-colors"
+                  />
+                  <p className="text-[11px] text-white/30 leading-relaxed">
+                    VP will be added to this Riot account.
+                  </p>
+                </div>
+              )}
 
               <div className="flex flex-col gap-2 mb-5">
                 {[
@@ -277,39 +397,34 @@ export default function CartClient() {
               </div>
 
               <div className="flex flex-col gap-3">
-                {/* Checkout button — disabled when checking or unavailable items exist */}
-                {canCheckout ? (
+                {checking ? (
+                  <button disabled className="w-full flex items-center justify-center gap-2 bg-white/5 border border-white/10 text-white/25 font-bold py-3.5 rounded-full cursor-not-allowed text-sm">
+                    <RefreshCw size={14} className="animate-spin" />
+                    Checking availability…
+                  </button>
+                ) : hasUnavailable ? (
+                  <div className="flex flex-col gap-2">
+                    <button disabled className="w-full flex items-center justify-center gap-2 bg-white/5 border border-white/10 text-white/25 font-bold py-3.5 rounded-full cursor-not-allowed text-sm">
+                      <AlertTriangle size={14} className="text-amber-400" />
+                      Checkout unavailable
+                    </button>
+                    <p className="text-xs text-amber-400/80 text-center leading-relaxed">
+                      Remove unavailable accounts above to continue.
+                    </p>
+                  </div>
+                ) : hasVP && !riotIdValid ? (
+                  <button disabled className="w-full flex items-center justify-center gap-2 bg-white/5 border border-white/10 text-white/25 font-bold py-3.5 rounded-full cursor-not-allowed text-sm">
+                    <MessageCircle size={14} />
+                    Enter Riot ID to checkout
+                  </button>
+                ) : (
                   <a
-                    href={`https://wa.me/918511037477?text=${generateWhatsAppMessage()}`}
+                    href={`https://wa.me/${STORE_CONFIG.whatsappNumber}?text=${buildCombinedWhatsAppMessage()}`}
                     target="_blank" rel="noopener noreferrer"
                     className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-full transition-all hover:scale-105 active:scale-95 text-sm"
                   >
                     <MessageCircle size={15} /> Checkout via WhatsApp
                   </a>
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    <button
-                      disabled
-                      className="w-full flex items-center justify-center gap-2 bg-white/5 border border-white/10 text-white/25 font-bold py-3.5 rounded-full cursor-not-allowed text-sm"
-                    >
-                      {checking ? (
-                        <>
-                          <RefreshCw size={14} className="animate-spin" />
-                          Checking availability…
-                        </>
-                      ) : (
-                        <>
-                          <AlertTriangle size={14} className="text-amber-400" />
-                          Checkout unavailable
-                        </>
-                      )}
-                    </button>
-                    {!checking && hasUnavailable && (
-                      <p className="text-xs text-amber-400/80 text-center leading-relaxed">
-                        Remove unavailable accounts above to continue.
-                      </p>
-                    )}
-                  </div>
                 )}
 
                 <p className="text-xs text-white/30 text-center leading-relaxed">
