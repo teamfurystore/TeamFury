@@ -359,30 +359,6 @@ export default function ProductDetailClient({ product, related }: Props) {
           ))}
         </StaggerReveal>
       </section>
-
-      {/* What's included */}
-      <section className="max-w-6xl mx-auto px-6 pb-10">
-        <ScrollReveal direction="up" duration={0.6}>
-          <h2 className="text-lg font-extrabold mb-4">What&apos;s Included</h2>
-          <div className="bg-white/4 border border-white/8 rounded-2xl p-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {[
-              `${product.skins} Premium Skins`,
-              product.knives > 0 ? `${product.knives} Rare Knife(s)` : null,
-              product.battle_passes > 0 ? `${product.battle_passes} Battle Pass(es)` : null,
-              "Verified Email Access",
-              "Full Account Ownership",
-              "Post-Sale Support",
-              product.instant_delivery ? "Instant Delivery (< 5 min)" : "Delivery within 24h",
-              "Anti-Scam Guarantee",
-            ].filter(Boolean).map((item) => (
-              <div key={item} className="flex items-center gap-2 text-sm text-white/65">
-                <span className="text-emerald-400 shrink-0">✓</span> {item}
-              </div>
-            ))}
-          </div>
-        </ScrollReveal>
-      </section>
-
       {/* Skins section — only shown if skins are saved */}
       <SkinsSection skins={product.product_items ?? []} />
 
