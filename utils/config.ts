@@ -23,11 +23,10 @@ export const SITE_CONFIG = {
 
 export const NAV_LINKS = [
   { label: "Home", href: "/" },
-  // { label: "News", href: "/news" },
   { label: "About", href: "/about" },
-  { label: "Review", href: "/review" },
   { label: "Shop", href: "/shop" },
   { label: "VP", href: "/vp" },
+  { label: "Review", href: "/review" },
   { label: "Contact Us", href: "/contact" },
 ];
 
