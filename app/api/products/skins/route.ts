@@ -96,10 +96,7 @@ export async function PUT(req: Request) {
         display_icon: item.display_icon ?? null,
       }));
 
-      const { data, error: insertError } = await supabase
-        .from("product_items")
-        .insert(insertData)
-        .select();
+      const { data, error: insertError } = await supabase.from("product_items").insert(insertData).select();
 
       if (insertError) throw insertError;
       inserted = data ?? [];
@@ -141,10 +138,7 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ success: true });
     }
 
-    const { error } = await supabase
-      .from("product_items")
-      .delete()
-      .eq("parent_product_id", parent_product_id);
+    const { error } = await supabase.from("product_items").delete().eq("parent_product_id", parent_product_id);
     if (error) throw error;
     return NextResponse.json({ success: true });
   } catch (err) {
@@ -152,5 +146,3 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ success: false, error: "Failed to delete skins" }, { status: 500 });
   }
 }
-
-
