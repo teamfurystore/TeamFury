@@ -1,9 +1,39 @@
 import { supabase } from "@/utils/supabaseClient";
+import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 
 // Give sharp enough time to process large images
 export const maxDuration = 30;
+
+function getToken(req: Request) {
+  const cookieHeader = req.headers.get("cookie");
+  if (!cookieHeader) return null;
+
+  const accessToken = cookieHeader.match(/sb-access-token=([^;]+)/)?.[1];
+  if (accessToken) return accessToken;
+
+  const jsonRaw = cookieHeader.match(/sb-[^=]+-auth-token=([^;]+)/)?.[1];
+  if (!jsonRaw) return null;
+
+  try {
+    const decoded = decodeURIComponent(jsonRaw);
+    const parsed = JSON.parse(decoded);
+    const session = Array.isArray(parsed) ? parsed[0] : parsed;
+    return session?.access_token ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function getAuthedClient(req: Request) {
+  const token = getToken(req);
+  if (!token) return null;
+
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+}
 
 // ── Image processing ──────────────────────────────────────────────────────────
 // Converts any uploaded image to WebP, resizes to max 1080px wide while
@@ -11,17 +41,13 @@ export const maxDuration = 30;
 
 async function processImage(file: File): Promise<{ buffer: Buffer; fileName: string }> {
   const raw = Buffer.from(await file.arrayBuffer());
-  const buffer = await sharp(raw)
-    .resize({ width: 1080, withoutEnlargement: true })
-    .webp({ quality: 82 })
-    .toBuffer();
+  const buffer = await sharp(raw).resize({ width: 1080, withoutEnlargement: true }).webp({ quality: 82 }).toBuffer();
   return { buffer, fileName: `products/${Date.now()}.webp` };
 }
 
 function errorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
-  if (err && typeof err === "object" && "message" in err)
-    return String((err as { message: unknown }).message);
+  if (err && typeof err === "object" && "message" in err) return String((err as { message: unknown }).message);
   return String(err);
 }
 
@@ -30,11 +56,7 @@ function errorMessage(err: unknown): string {
 export async function PATCH(req: Request) {
   try {
     const { id, is_active } = await req.json();
-    const { data, error } = await supabase
-      .from("products")
-      .update({ is_active: !is_active })
-      .eq("id", id)
-      .select();
+    const { data, error } = await supabase.from("products").update({ is_active: !is_active }).eq("id", id).select();
     if (error) throw error;
     return NextResponse.json({ success: true, data });
   } catch (err) {
@@ -46,18 +68,18 @@ export async function PATCH(req: Request) {
 // ── POST /api/products — create product with image upload ─────────────────────
 
 export async function POST(req: Request) {
+  console.log("Uploading...");
+
   try {
     const formData = await req.formData();
-    const file =
-      (formData.get("file") as File | null) ??
-      (formData.get("image") as File | null);
+    const file = (formData.get("file") as File | null) ?? (formData.get("image") as File | null);
     const data = JSON.parse(formData.get("data") as string);
     const existingImageUrl: string | null = data?.image ?? null;
 
     if (!file && !existingImageUrl) {
       return NextResponse.json(
         { success: false, message: "No file uploaded and no existing image URL provided" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -72,47 +94,57 @@ export async function POST(req: Request) {
 
       if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`);
 
-      const { data: urlData } = supabase.storage
-        .from("Thumbnails")
-        .getPublicUrl(fileName);
+      const { data: urlData } = supabase.storage.from("Thumbnails").getPublicUrl(fileName);
 
       imageUrl = urlData.publicUrl;
     }
 
-    const { data: insertedData, error } = await supabase
+    const authClient = await getAuthedClient(req);
+    if (!authClient) {
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+    }
+
+    const { data: userData, error: userError } = await authClient.auth.getUser();
+    if (userError || !userData?.user?.id) {
+      console.error("Auth user fetch failed:", userError);
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+    }
+
+    console.log("user with ID " + userData.user.id + " is creating a product");
+
+    const { data: insertedData, error } = await authClient
       .from("products")
-      .insert([{
-        title: data.title,
-        slug: data.slug,
-        price: data.price ?? 0,
-        discounted_price: data.discounted_price ?? 0,
-        current_rank: data.current_rank ?? null,
-        peak_rank: data.peak_rank ?? null,
-        skins: data.skins ?? 0,
-        knives: data.knives ?? 0,
-        battle_passes: data.battle_passes ?? 0,
-        region: data.region ?? null,
-        level: data.level ?? 0,
-        badge: data.badge ?? null,
-        image: imageUrl,
-        description: data.description ?? null,
-        verified: data.verified ?? false,
-        instant_delivery: data.instant_delivery ?? false,
-        profile_url: data.profile_url ?? null,
-      }])
+      .insert([
+        {
+          title: data.title,
+          slug: data.slug,
+          price: data.price ?? 0,
+          discounted_price: data.discounted_price ?? 0,
+          current_rank: data.current_rank ?? null,
+          peak_rank: data.peak_rank ?? null,
+          skins: data.skins ?? 0,
+          knives: data.knives ?? 0,
+          battle_passes: data.battle_passes ?? 0,
+          region: data.region ?? null,
+          level: data.level ?? 0,
+          badge: data.badge ?? null,
+          image: imageUrl,
+          description: data.description ?? null,
+          verified: data.verified ?? false,
+          instant_delivery: data.instant_delivery ?? false,
+          profile_url: data.profile_url ?? null,
+        },
+      ])
       .select();
 
     if (error) throw new Error(`DB insert failed: ${error.message}`);
 
     return NextResponse.json(
       { success: true, message: "Image uploaded & product saved", imageUrl, data: insertedData },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (err) {
     console.error("POST /api/products error:", err);
-    return NextResponse.json(
-      { success: false, message: "Upload failed", error: errorMessage(err) },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, message: "Upload failed", error: errorMessage(err) }, { status: 500 });
   }
 }
