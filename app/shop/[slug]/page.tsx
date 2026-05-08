@@ -1,18 +1,17 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { supabase } from "@/utils/supabaseClient";
+import { createServerClient } from "@/utils/supabaseServer";
 import { type DbProduct, type DbProductItem } from "@/features/products/productsSlice";
 import ProductDetailClient from "@/components/shop/ProductDetailClient";
 
-// Allow slugs not in generateStaticParams to be rendered on-demand (ISR).
-// This means new products added after a deploy work immediately without
-// needing a full rebuild.
 export const dynamicParams = true;
 
-// ── Data fetching — direct Supabase query, no HTTP round-trip ─────────────────
+// ── Data fetching ─────────────────────────────────────────────────────────────
 
 async function getProduct(slug: string): Promise<DbProduct | null> {
-  const { data: product, error } = await supabase
+  const db = createServerClient();
+
+  const { data: product, error } = await db
     .from("products")
     .select(
       "id, slug, title, image, profile_url, price, discounted_price, badge, " +
@@ -25,11 +24,12 @@ async function getProduct(slug: string): Promise<DbProduct | null> {
 
   if (error || !product) return null;
 
-  // Fetch skins for this product
-  const { data: items } = await supabase
+  const pid = (product as unknown as { id: string }).id;
+
+  const { data: items } = await db
     .from("product_items")
     .select("id, skin_id, display_name, display_icon")
-    .eq("parent_product_id", (product as unknown as { id: string }).id);
+    .eq("parent_product_id", pid);
 
   return {
     ...(product as unknown as DbProduct),
@@ -38,7 +38,9 @@ async function getProduct(slug: string): Promise<DbProduct | null> {
 }
 
 async function getRelated(product: DbProduct): Promise<DbProduct[]> {
-  const { data } = await supabase
+  const db = createServerClient();
+
+  const { data } = await db
     .from("products")
     .select(
       "id, slug, title, image, profile_url, price, discounted_price, badge, " +
@@ -52,9 +54,9 @@ async function getRelated(product: DbProduct): Promise<DbProduct[]> {
 
   const related = (data ?? []) as unknown as DbProduct[];
 
-  // If fewer than 4 same-rank, fill with other products
   if (related.length < 4) {
-    const { data: others } = await supabase
+    const excludeIds = [product.id, ...related.map((p) => p.id)];
+    const { data: others } = await db
       .from("products")
       .select(
         "id, slug, title, image, profile_url, price, discounted_price, badge, " +
@@ -62,30 +64,26 @@ async function getRelated(product: DbProduct): Promise<DbProduct[]> {
         "verified, instant_delivery, description, created_at"
       )
       .eq("is_active", true)
-      .neq("id", product.id)
-      .not("id", "in", `(${related.map((p) => p.id).join(",")})`)
+      .not("id", "in", `(${excludeIds.join(",")})`)
       .limit(4 - related.length);
 
     return [
-      ...related,
-      ...((others ?? []) as unknown as DbProduct[]).map((p) => ({
-        ...p,
-        product_items: [],
-      })),
+      ...related.map((p) => ({ ...p, product_items: [] })),
+      ...((others ?? []) as unknown as DbProduct[]).map((p) => ({ ...p, product_items: [] })),
     ];
   }
 
   return related.map((p) => ({ ...p, product_items: [] }));
 }
 
-// ── Static params — pre-render known slugs at build time ──────────────────────
+// ── Static params ─────────────────────────────────────────────────────────────
 
 export async function generateStaticParams() {
-  const { data } = await supabase
+  const db = createServerClient();
+  const { data } = await db
     .from("products")
     .select("slug")
     .eq("is_active", true);
-
   return (data ?? []).map((p) => ({ slug: p.slug as string }));
 }
 

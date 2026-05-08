@@ -55,7 +55,13 @@ export default function ProductModal({ product, onClose }: Props) {
         {/* Hero */}
         <div className="relative aspect-video bg-linear-to-br from-red-900/30 to-zinc-900 rounded-t-2xl overflow-hidden flex items-center justify-center">
           {product.image ? (
-            <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
+            <img
+              src={product.image}
+              alt={product.title}
+              className="w-full h-full object-cover"
+              loading="lazy"
+              decoding="async"
+            />
           ) : (
             <span className="text-8xl opacity-10">🎮</span>
           )}
@@ -92,11 +98,11 @@ export default function ProductModal({ product, onClose }: Props) {
           {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {[
-              { label: "Current Rank",  value: product.current_rank,  color: RANK_COLORS[product.current_rank] },
-              { label: "Peak Rank",     value: product.peak_rank,     color: RANK_COLORS[product.peak_rank] },
-              { label: "Level",         value: `Lv. ${product.level}`, color: "text-white" },
-              { label: "Skins",         value: `${product.skins}`,    color: "text-purple-400" },
-              { label: "Knives",        value: `${product.knives}`,   color: "text-red-400" },
+              { label: "Current Rank", value: product.current_rank, color: RANK_COLORS[product.current_rank] },
+              { label: "Peak Rank", value: product.peak_rank, color: RANK_COLORS[product.peak_rank] },
+              { label: "Level", value: `Lv. ${product.level}`, color: "text-white" },
+              { label: "Skins", value: `${product.skins}`, color: "text-purple-400" },
+              { label: "Knives", value: `${product.knives}`, color: "text-red-400" },
               { label: "Battle Passes", value: `${product.battle_passes}`, color: "text-blue-400" },
             ].map((s) => (
               <div key={s.label} className="bg-white/5 border border-white/8 rounded-xl p-3">
@@ -127,11 +133,10 @@ export default function ProductModal({ product, onClose }: Props) {
           <button
             onClick={handleAdd}
             disabled={inCart}
-            className={`w-full flex items-center justify-center gap-2 font-bold py-3.5 rounded-full transition-all text-sm active:scale-95 disabled:cursor-default ${
-              inCart
+            className={`w-full flex items-center justify-center gap-2 font-bold py-3.5 rounded-full transition-all text-sm active:scale-95 disabled:cursor-default ${inCart
                 ? "bg-emerald-600/20 border border-emerald-500/30 text-emerald-400"
                 : "bg-red-600 hover:bg-red-500 text-white"
-            }`}
+              }`}
           >
             <AnimatePresence mode="wait" initial={false}>
               {inCart ? (
