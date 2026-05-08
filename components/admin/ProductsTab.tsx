@@ -51,19 +51,37 @@ type FormState = Omit<Product, "id" | NumericField> & {
   [K in NumericField]: number | "";
 };
 
-const RANKS: Rank[] = [
-  "Iron", "Bronze", "Silver", "Gold", "Platinum",
-  "Diamond", "Ascendant", "Immortal", "Radiant",
-];
+type RootState = {
+  adminProducts: {
+    togglingId: string | null;
+  };
+  skins: {
+    savedSelections: Record<string, SelectedSkin[]>;
+  };
+};
+
+const RANKS: Rank[] = ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"];
 
 const EMPTY: FormState = {
-  slug: "", title: "", image: "", profile_url: "",
-  price: "", discounted_price: "", badge: "",
-  current_rank: "Gold", peak_rank: "Gold",
-  skins: "", knives: "", battle_passes: "",
-  region: "India", level: "",
-  verified: true, instant_delivery: true, active: false,
-  description: "", product_items: [],
+  slug: "",
+  title: "",
+  image: "",
+  profile_url: "",
+  price: "",
+  discounted_price: "",
+  badge: "",
+  current_rank: "Gold",
+  peak_rank: "Gold",
+  skins: "",
+  knives: "",
+  battle_passes: "",
+  region: "India",
+  level: "",
+  verified: true,
+  instant_delivery: true,
+  active: false,
+  description: "",
+  product_items: [],
 };
 
 /** Coerce FormState → Product payload (empty strings become 0) */
@@ -110,7 +128,7 @@ export default function ProductsTab() {
     try {
       const imageCompression = (await import("browser-image-compression")).default;
       const compressed = await imageCompression(file, {
-        maxSizeMB: 1,          // target ≤ 1 MB
+        maxSizeMB: 1, // target ≤ 1 MB
         maxWidthOrHeight: 1080, // never wider than 1080px
         useWebWorker: true,
         fileType: "image/webp",
@@ -118,7 +136,7 @@ export default function ProductsTab() {
       setImageFile(compressed);
       setImagePreview(URL.createObjectURL(compressed));
       toast.success(
-        `Image compressed: ${(file.size / 1024 / 1024).toFixed(1)} MB → ${(compressed.size / 1024 / 1024).toFixed(2)} MB`
+        `Image compressed: ${(file.size / 1024 / 1024).toFixed(1)} MB → ${(compressed.size / 1024 / 1024).toFixed(2)} MB`,
       );
     } catch {
       // Compression failed — fall back to original file
@@ -157,7 +175,9 @@ export default function ProductsTab() {
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   // ── Modal helpers ───────────────────────────────────────────────────────────
 
@@ -271,16 +291,10 @@ export default function ProductsTab() {
   // ── Toggle active ───────────────────────────────────────────────────────────
 
   async function handleToggle(row: Product) {
-    setData((prev) =>
-      prev.map((p) => (p.id === row.id ? { ...p, active: !p.active } : p))
-    );
-    const result = await dispatch(
-      toggleProductActive({ id: row.id, currentActive: row.active })
-    );
+    setData((prev) => prev.map((p) => (p.id === row.id ? { ...p, active: !p.active } : p)));
+    const result = await dispatch(toggleProductActive({ id: row.id, currentActive: row.active }));
     if (toggleProductActive.rejected.match(result)) {
-      setData((prev) =>
-        prev.map((p) => (p.id === row.id ? { ...p, active: row.active } : p))
-      );
+      setData((prev) => prev.map((p) => (p.id === row.id ? { ...p, active: row.active } : p)));
       toast.error("Failed to update publish status");
     } else {
       toast.success(row.active ? `"${row.title}" unpublished` : `"${row.title}" published`);
@@ -335,11 +349,15 @@ export default function ProductsTab() {
           onClick={() => handleToggle(row)}
           disabled={togglingId === row.id || savingId === row.id}
           title={row.active ? "Click to unpublish" : "Click to publish"}
-          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50 ${row.active ? "bg-emerald-500" : "bg-white/15"
-            }`}
+          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
+            row.active ? "bg-emerald-500" : "bg-white/15"
+          }`}
         >
-          <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200 ${row.active ? "translate-x-4" : "translate-x-1"
-            }`} />
+          <span
+            className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+              row.active ? "translate-x-4" : "translate-x-1"
+            }`}
+          />
         </button>
       ),
     },
@@ -361,8 +379,12 @@ export default function ProductsTab() {
                 </span>
               )}
             </button>
-            <Btn variant="ghost" onClick={() => openEdit(row)}>Edit</Btn>
-            <Btn variant="danger" onClick={() => setDeleteTarget(row)}>Delete</Btn>
+            <Btn variant="ghost" onClick={() => openEdit(row)}>
+              Edit
+            </Btn>
+            <Btn variant="danger" onClick={() => setDeleteTarget(row)}>
+              Delete
+            </Btn>
           </div>
         );
       },
@@ -391,19 +413,19 @@ export default function ProductsTab() {
           </div>
         </div>
         <div className="flex gap-1.5">
-          <Btn variant="ghost" onClick={load} disabled={loading}>↻ Refresh</Btn>
-          <Btn variant="primary" onClick={openAdd}>+ Add Product</Btn>
+          <Btn variant="ghost" onClick={load} disabled={loading}>
+            ↻ Refresh
+          </Btn>
+          <Btn variant="primary" onClick={openAdd}>
+            + Add Product
+          </Btn>
         </div>
       </div>
 
       <AdminTable columns={columns} data={data} loading={loading} emptyMessage="No products yet" />
 
       {modal && (
-        <AdminModal
-          title={modal === "add" ? "Add Product" : "Edit Product"}
-          onClose={closeModal}
-          size="lg"
-        >
+        <AdminModal title={modal === "add" ? "Add Product" : "Edit Product"} onClose={closeModal} size="lg">
           <ProductForm
             form={form}
             onChange={setForm}
@@ -468,7 +490,6 @@ function ProductForm({
 
   return (
     <div className="flex flex-col gap-3">
-
       {/* Thumbnail — required on add, optional on edit */}
       <Field label={isEdit ? "Thumbnail Image (leave blank to keep current)" : "Thumbnail Image *"}>
         {/* Show current / newly picked preview */}
@@ -493,18 +514,24 @@ function ProductForm({
           disabled={compressing}
           className={`${inp} disabled:opacity-50 disabled:cursor-not-allowed`}
         />
-        <p className="text-[10px] text-white/25 mt-1">
-          Automatically compressed to ≤ 1 MB · 1080px max width
-        </p>
+        <p className="text-[10px] text-white/25 mt-1">Automatically compressed to ≤ 1 MB · 1080px max width</p>
       </Field>
 
       <Field label="Title *">
-        <input value={form.title} onChange={(e) => set("title", e.target.value)}
-          className={inp} placeholder="Diamond Smurf — 25 Skins" />
+        <input
+          value={form.title}
+          onChange={(e) => set("title", e.target.value)}
+          className={inp}
+          placeholder="Diamond Smurf — 25 Skins"
+        />
       </Field>
       <Field label="Slug *">
-        <input value={form.slug} onChange={(e) => set("slug", e.target.value)}
-          className={inp} placeholder="diamond-smurf-25-skins" />
+        <input
+          value={form.slug}
+          onChange={(e) => set("slug", e.target.value)}
+          className={inp}
+          placeholder="diamond-smurf-25-skins"
+        />
       </Field>
 
       <div className="grid grid-cols-2 gap-3">
@@ -529,12 +556,16 @@ function ProductForm({
       <div className="grid grid-cols-2 gap-3">
         <Field label="Current Rank">
           <select value={form.current_rank} onChange={(e) => set("current_rank", e.target.value)} className={sel}>
-            {RANKS.map((r) => <option key={r}>{r}</option>)}
+            {RANKS.map((r) => (
+              <option key={r}>{r}</option>
+            ))}
           </select>
         </Field>
         <Field label="Peak Rank">
           <select value={form.peak_rank} onChange={(e) => set("peak_rank", e.target.value)} className={sel}>
-            {RANKS.map((r) => <option key={r}>{r}</option>)}
+            {RANKS.map((r) => (
+              <option key={r}>{r}</option>
+            ))}
           </select>
         </Field>
       </div>
@@ -553,11 +584,7 @@ function ProductForm({
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Region">
-          <select
-            value={form.region}
-            onChange={(e) => set("region", e.target.value)}
-            className={sel}
-          >
+          <select value={form.region} onChange={(e) => set("region", e.target.value)} className={sel}>
             <option value="India">India</option>
             <option value="Philippines">Philippines</option>
             <option value="Others">Others</option>
@@ -570,24 +597,40 @@ function ProductForm({
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Badge (optional)">
-          <input value={form.badge ?? ""} onChange={(e) => set("badge", e.target.value)}
-            className={inp} placeholder="HOT DEAL" />
+          <input
+            value={form.badge ?? ""}
+            onChange={(e) => set("badge", e.target.value)}
+            className={inp}
+            placeholder="HOT DEAL"
+          />
         </Field>
         <Field label="Valorant profile URL">
-          <input value={form.profile_url} onChange={(e) => set("profile_url", e.target.value)}
-            className={inp} placeholder="https://tracker.gg/valorant" />
+          <input
+            value={form.profile_url}
+            onChange={(e) => set("profile_url", e.target.value)}
+            className={inp}
+            placeholder="https://tracker.gg/valorant"
+          />
         </Field>
       </div>
 
       <Field label="Description">
-        <textarea value={form.description} onChange={(e) => set("description", e.target.value)}
-          rows={3} className={`${inp} resize-none`} />
+        <textarea
+          value={form.description}
+          onChange={(e) => set("description", e.target.value)}
+          rows={3}
+          className={`${inp} resize-none`}
+        />
       </Field>
 
       <div className="flex gap-5 pt-1">
         <Toggle label="Verified" checked={form.verified} onChange={(v) => set("verified", v)} />
-        <Toggle label="Instant Delivery" checked={form.instant_delivery}
-          onChange={(v) => set("instant_delivery", v)} color="emerald" />
+        <Toggle
+          label="Instant Delivery"
+          checked={form.instant_delivery}
+          onChange={(v) => set("instant_delivery", v)}
+          color="emerald"
+        />
       </div>
 
       <button
@@ -612,17 +655,30 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function Toggle({ label, checked, onChange, color = "white" }: {
-  label: string; checked: boolean; onChange: (v: boolean) => void; color?: string;
+function Toggle({
+  label,
+  checked,
+  onChange,
+  color = "white",
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  color?: string;
 }) {
   const bg = checked ? (color === "emerald" ? "bg-emerald-500" : "bg-white") : "bg-white/15";
   const dot = checked
-    ? (color === "emerald" ? "bg-white translate-x-4" : "bg-[#0f0f0f] translate-x-4")
+    ? color === "emerald"
+      ? "bg-white translate-x-4"
+      : "bg-[#0f0f0f] translate-x-4"
     : "bg-white translate-x-1";
   return (
     <label className="flex items-center gap-2 cursor-pointer select-none">
-      <button type="button" onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${bg}`}>
+      <button
+        type="button"
+        onClick={() => onChange(!checked)}
+        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${bg}`}
+      >
         <span className={`inline-block h-3.5 w-3.5 rounded-full shadow-sm transition-transform duration-200 ${dot}`} />
       </button>
       <span className="text-xs text-white/55">{label}</span>
@@ -630,8 +686,15 @@ function Toggle({ label, checked, onChange, color = "white" }: {
   );
 }
 
-function Btn({ children, onClick, disabled, variant = "ghost" }: {
-  children: React.ReactNode; onClick?: () => void; disabled?: boolean;
+function Btn({
+  children,
+  onClick,
+  disabled,
+  variant = "ghost",
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
   variant?: "ghost" | "primary" | "danger";
 }) {
   const s = {
@@ -640,12 +703,17 @@ function Btn({ children, onClick, disabled, variant = "ghost" }: {
     danger: "text-red-400 hover:text-red-300 border border-red-500/15 hover:border-red-500/30 hover:bg-red-500/5",
   };
   return (
-    <button onClick={onClick} disabled={disabled}
-      className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${s[variant]}`}>
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${s[variant]}`}
+    >
       {children}
     </button>
   );
 }
 
-const inp = "bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:ring-1 focus:ring-white/25 focus:border-white/25 transition-all w-full";
-const sel = "bg-[#1a1a1a] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/25 transition-all w-full";
+const inp =
+  "bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:ring-1 focus:ring-white/25 focus:border-white/25 transition-all w-full";
+const sel =
+  "bg-[#1a1a1a] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/25 transition-all w-full";
