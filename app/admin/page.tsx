@@ -15,7 +15,32 @@ export default function AdminLoginPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    // Detailed password validation
+    if (password.length < 8) {
+      setError("Password must contain at least 8 characters.");
+      setLoading(false);
+      return;
+    }
 
+    if (!/[a-zA-Z]/.test(password)) {
+      setError("Password must contain at least 1 alphabet character.");
+      setLoading(false);
+      return;
+    }
+
+    if (!/\d/.test(password)) {
+      setError("Password must contain at least 1 number.");
+      setLoading(false);
+      return;
+    }
+
+    if (!/[!@#$%^&*]/.test(password)) {
+      setError(
+        "Password must contain at least 1 special character (!@#$%^&*)."
+      );
+      setLoading(false);
+      return;
+    }
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error || !data.session) {

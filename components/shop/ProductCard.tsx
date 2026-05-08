@@ -22,7 +22,9 @@ export default function ProductCard({ product }: Props) {
     ? Math.round(((product.price - product.discounted_price) / product.price) * 100)
     : 0;
 
-  function handleAdd() {
+  function handleAdd(e: React.MouseEvent<HTMLButtonElement>) {
+    e.preventDefault();
+    e.stopPropagation();
     if (inCart) return;
     addToCart(product);
     setJustAdded(true);
