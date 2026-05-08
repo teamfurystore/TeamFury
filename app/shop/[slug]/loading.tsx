@@ -68,23 +68,6 @@ export default function ProductDetailLoading() {
                     ))}
                 </div>
             </section>
-
-            {/* ── What's included ── */}
-            <section className="max-w-6xl mx-auto px-6 pb-10">
-                <div className="h-5 w-36 bg-white/8 rounded-xl mb-4" />
-                <div className="bg-white/4 border border-white/8 rounded-2xl p-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-emerald-500/15 shrink-0" />
-                            <div
-                                className="h-3.5 bg-white/6 rounded-full"
-                                style={{ width: `${55 + (i % 3) * 15}%` }}
-                            />
-                        </div>
-                    ))}
-                </div>
-            </section>
-
             {/* ── Related products ── */}
             <section className="max-w-6xl mx-auto px-6 pb-20">
                 <div className="h-5 w-40 bg-white/8 rounded-xl mb-6" />

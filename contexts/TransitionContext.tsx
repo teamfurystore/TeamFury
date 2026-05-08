@@ -23,7 +23,7 @@ export const TRANSITION_ROUTES: string[] = [
   "/review",
   "/contact",
   "/cart",
-  "/store",
+  "/vp",
   // "/admin",  ← uncomment to enable on admin routes
 ];
 
@@ -45,7 +45,7 @@ const ROUTE_LABELS: Record<string, string> = {
   "/contact": "COMMS",
   "/cart": "LOADOUT",
   "/admin": "COMMAND",
-  "/store": "TREASURE",
+  "/vp": "TREASURE",
 };
 
 export function getRouteLabel(path: string): string {
