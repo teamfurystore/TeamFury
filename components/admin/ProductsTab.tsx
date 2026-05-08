@@ -474,7 +474,7 @@ function ProductForm({
         {/* Show current / newly picked preview */}
         {imagePreview && !compressing && (
           <div className="w-full max-h-[30vh] rounded-xl overflow-hidden bg-white/5 border border-white/10 mb-1">
-            <img src={imagePreview} alt="Thumbnail preview" className="w-full h-full object-cover" />
+            <img src={imagePreview} alt="Thumbnail preview" className="w-full h-full object-cover" loading="lazy" decoding="async" />
           </div>
         )}
         {compressing && (

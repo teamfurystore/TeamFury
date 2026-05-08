@@ -48,7 +48,7 @@ function SkinLightbox({
         {/* Close */}
         <button
           onClick={onClose}
-          className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+          className="absolute -top-2 -right-2 w-8 h-8 rounded-full z-20 bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white transition-colors"
         >
           <X size={14} />
         </button>
@@ -61,7 +61,7 @@ function SkinLightbox({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.18 }}
-            className="w-full bg-black/40 border border-white/10 rounded-2xl overflow-hidden flex items-center justify-center p-6"
+            className="w-full h-80 bg-black/40 border border-white/10 rounded-2xl overflow-hidden flex items-center justify-center p-6"
           >
             {skin.display_icon ? (
               <img
@@ -222,7 +222,13 @@ export default function ProductDetailClient({ product, related }: Props) {
         <ScrollReveal direction="left" duration={0.7}>
           <div className="relative aspect-video bg-linear-to-br from-red-900/30 to-zinc-900 rounded-2xl overflow-hidden flex items-center justify-center border border-white/8">
             {product.image ? (
-              <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
+              <img
+                src={product.image}
+                alt={product.title}
+                className="w-full h-full object-cover"
+                loading="eager"
+                decoding="async"
+              />
             ) : (
               <span className="text-9xl opacity-8">🎮</span>
             )}
