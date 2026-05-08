@@ -55,8 +55,12 @@ function errorMessage(err: unknown): string {
 
 export async function PATCH(req: Request) {
   try {
+    const authClient = await getAuthedClient(req);
+    if (!authClient) {
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+    }
     const { id, is_active } = await req.json();
-    const { data, error } = await supabase.from("products").update({ is_active: !is_active }).eq("id", id).select();
+    const { data, error } = await authClient.from("products").update({ is_active: !is_active }).eq("id", id).select();
     if (error) throw error;
     return NextResponse.json({ success: true, data });
   } catch (err) {
