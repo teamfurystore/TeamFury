@@ -48,7 +48,7 @@ function SkinLightbox({
         {/* Close */}
         <button
           onClick={onClose}
-          className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+          className="absolute -top-2 -right-2 w-8 h-8 rounded-full z-20 bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white transition-colors"
         >
           <X size={14} />
         </button>
@@ -61,7 +61,7 @@ function SkinLightbox({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.18 }}
-            className="w-full bg-black/40 border border-white/10 rounded-2xl overflow-hidden flex items-center justify-center p-6"
+            className="w-full h-80 bg-black/40 border border-white/10 rounded-2xl overflow-hidden flex items-center justify-center p-6"
           >
             {skin.display_icon ? (
               <img
@@ -96,9 +96,8 @@ function SkinLightbox({
                 <button
                   key={i}
                   onClick={() => setIdx(i)}
-                  className={`w-1.5 h-1.5 rounded-full transition-all ${
-                    i === idx ? "bg-red-500 w-3" : "bg-white/20 hover:bg-white/40"
-                  }`}
+                  className={`w-1.5 h-1.5 rounded-full transition-all ${i === idx ? "bg-red-500 w-3" : "bg-white/20 hover:bg-white/40"
+                    }`}
                 />
               ))}
               {skins.length > 10 && (
@@ -186,18 +185,19 @@ export default function ProductDetailClient({ product, related }: Props) {
   const { addToCart, isInCart } = useCart();
   const inCart = isInCart(product.id);
 
-  const discount = product.price > 0
+  const hasDiscount = product.price > 0 && product.price > product.discounted_price;
+  const discount = hasDiscount
     ? Math.round(((product.price - product.discounted_price) / product.price) * 100)
     : 0;
 
   const stats = [
-    { label: "Current Rank",  value: product.current_rank,  color: RANK_COLORS[product.current_rank] },
-    { label: "Peak Rank",     value: product.peak_rank,     color: RANK_COLORS[product.peak_rank] },
+    { label: "Current Rank", value: product.current_rank, color: RANK_COLORS[product.current_rank] },
+    { label: "Peak Rank", value: product.peak_rank, color: RANK_COLORS[product.peak_rank] },
     { label: "Account Level", value: `Lv. ${product.level}`, color: "text-white" },
     { label: "Premium Skins", value: `${product.skins} skins`, color: "text-purple-400" },
-    { label: "Rare Knives",   value: `${product.knives} knives`, color: "text-red-400" },
+    { label: "Rare Knives", value: `${product.knives} knives`, color: "text-red-400" },
     { label: "Battle Passes", value: `${product.battle_passes} passes`, color: "text-blue-400" },
-    { label: "Region",        value: product.region, color: "text-cyan-400" },
+    { label: "Region", value: product.region, color: "text-cyan-400" },
     {
       label: "Delivery",
       value: product.instant_delivery ? "Instant (< 5 min)" : "Within 24h",
@@ -222,7 +222,13 @@ export default function ProductDetailClient({ product, related }: Props) {
         <ScrollReveal direction="left" duration={0.7}>
           <div className="relative aspect-video bg-linear-to-br from-red-900/30 to-zinc-900 rounded-2xl overflow-hidden flex items-center justify-center border border-white/8">
             {product.image ? (
-              <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
+              <img
+                src={product.image}
+                alt={product.title}
+                className="w-full h-full object-cover"
+                loading="eager"
+                decoding="async"
+              />
             ) : (
               <span className="text-9xl opacity-8">🎮</span>
             )}
@@ -232,7 +238,7 @@ export default function ProductDetailClient({ product, related }: Props) {
                   {product.badge}
                 </span>
               )}
-              {discount > 0 && (
+              {hasDiscount && (
                 <span className="bg-yellow-500 text-black text-xs font-extrabold px-3 py-1 rounded-full">
                   -{discount}% OFF
                 </span>
@@ -270,10 +276,12 @@ export default function ProductDetailClient({ product, related }: Props) {
               <span className="text-4xl font-extrabold text-white">
                 ₹{product.discounted_price.toLocaleString("en-IN")}
               </span>
-              <span className="text-lg text-white/30 line-through">
-                ₹{product.price.toLocaleString("en-IN")}
-              </span>
-              {discount > 0 && (
+              {hasDiscount && (
+                <span className="text-lg text-white/30 line-through">
+                  ₹{product.price.toLocaleString("en-IN")}
+                </span>
+              )}
+              {hasDiscount && (
                 <span className="bg-emerald-600/15 text-emerald-400 text-sm font-semibold px-3 py-1 rounded-full border border-emerald-500/20">
                   Save ₹{(product.price - product.discounted_price).toLocaleString("en-IN")}
                 </span>
@@ -302,11 +310,10 @@ export default function ProductDetailClient({ product, related }: Props) {
               <button
                 onClick={() => !inCart && addToCart(product)}
                 disabled={inCart}
-                className={`w-full flex items-center justify-center gap-2 font-bold py-4 rounded-full transition-all text-sm active:scale-95 disabled:cursor-default ${
-                  inCart
-                    ? "bg-emerald-600/20 border border-emerald-500/30 text-emerald-400"
-                    : "bg-red-600 hover:bg-red-500 text-white"
-                }`}
+                className={`w-full flex items-center justify-center gap-2 font-bold py-4 rounded-full transition-all text-sm active:scale-95 disabled:cursor-default ${inCart
+                  ? "bg-emerald-600/20 border border-emerald-500/30 text-emerald-400"
+                  : "bg-red-600 hover:bg-red-500 text-white"
+                  }`}
               >
                 <AnimatePresence mode="wait" initial={false}>
                   {inCart ? (
@@ -352,30 +359,6 @@ export default function ProductDetailClient({ product, related }: Props) {
           ))}
         </StaggerReveal>
       </section>
-
-      {/* What's included */}
-      <section className="max-w-6xl mx-auto px-6 pb-10">
-        <ScrollReveal direction="up" duration={0.6}>
-          <h2 className="text-lg font-extrabold mb-4">What&apos;s Included</h2>
-          <div className="bg-white/4 border border-white/8 rounded-2xl p-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {[
-              `${product.skins} Premium Skins`,
-              product.knives > 0 ? `${product.knives} Rare Knife(s)` : null,
-              product.battle_passes > 0 ? `${product.battle_passes} Battle Pass(es)` : null,
-              "Verified Email Access",
-              "Full Account Ownership",
-              "Post-Sale Support",
-              product.instant_delivery ? "Instant Delivery (< 5 min)" : "Delivery within 24h",
-              "Anti-Scam Guarantee",
-            ].filter(Boolean).map((item) => (
-              <div key={item} className="flex items-center gap-2 text-sm text-white/65">
-                <span className="text-emerald-400 shrink-0">✓</span> {item}
-              </div>
-            ))}
-          </div>
-        </ScrollReveal>
-      </section>
-
       {/* Skins section — only shown if skins are saved */}
       <SkinsSection skins={product.product_items ?? []} />
 

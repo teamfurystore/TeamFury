@@ -23,6 +23,7 @@ export const TRANSITION_ROUTES: string[] = [
   "/review",
   "/contact",
   "/cart",
+  "/vp",
   // "/admin",  ← uncomment to enable on admin routes
 ];
 
@@ -37,18 +38,19 @@ export function shouldTransition(from: string, to: string): boolean {
 // ROUTE LABELS
 // ─────────────────────────────────────────────────────────────────────────────
 const ROUTE_LABELS: Record<string, string> = {
-  "/":        "HOME BASE",
-  "/shop":    "ARMORY",
-  "/about":   "INTEL",
-  "/review":  "DEBRIEF",
+  "/": "HOME BASE",
+  "/shop": "ARMORY",
+  "/about": "INTEL",
+  "/review": "DEBRIEF",
   "/contact": "COMMS",
-  "/cart":    "LOADOUT",
-  "/admin":   "COMMAND",
+  "/cart": "LOADOUT",
+  "/admin": "COMMAND",
+  "/vp": "TREASURE",
 };
 
 export function getRouteLabel(path: string): string {
   if (ROUTE_LABELS[path]) return ROUTE_LABELS[path];
-  if (path.startsWith("/shop/"))  return "ACCOUNT DETAIL";
+  if (path.startsWith("/shop/")) return "ACCOUNT DETAIL";
   if (path.startsWith("/admin/")) return "COMMAND CENTER";
   return "NAVIGATING";
 }
@@ -56,9 +58,9 @@ export function getRouteLabel(path: string): string {
 // ─────────────────────────────────────────────────────────────────────────────
 // TIMINGS (ms)
 // ─────────────────────────────────────────────────────────────────────────────
-const T_PANELS_IN  = 420;   // panels fully closed, show HUD
-const T_NAVIGATE   = 500;   // fire router.push while panels are closed
-const T_HOLD       = 900;   // start opening panels
+const T_PANELS_IN = 420;   // panels fully closed, show HUD
+const T_NAVIGATE = 500;   // fire router.push while panels are closed
+const T_HOLD = 900;   // start opening panels
 const T_PANELS_OUT = 1300;  // panels fully open → idle
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -84,18 +86,18 @@ const TransitionContext = createContext<TransitionContextValue>({
   barKey: 0,
   isTransitioning: false,
   isReady: true,
-  navigate: () => {},
+  navigate: () => { },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PROVIDER
 // ─────────────────────────────────────────────────────────────────────────────
 export function TransitionProvider({ children }: { children: ReactNode }) {
-  const router   = useRouter();
+  const router = useRouter();
   const pathname = usePathname();
 
-  const [phase, setPhase]   = useState<Phase>("idle");
-  const [label, setLabel]   = useState("");
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [label, setLabel] = useState("");
   const [barKey, setBarKey] = useState(0);
 
   // Keep a ref to the latest pathname so navigate() can read it synchronously
