@@ -52,7 +52,7 @@ export default function ProductCard({ product }: Props) {
 
           <div className="absolute top-3 left-3 flex flex-col gap-1.5">
             {product.badge && (
-              <span className="bg-red-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full tracking-widest">
+              <span className="bg-red-600 text-center text-white text-[10px] font-bold px-2.5 py-1 rounded-full tracking-widest">
                 {product.badge}
               </span>
             )}

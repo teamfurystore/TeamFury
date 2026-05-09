@@ -13,7 +13,7 @@ import AdminModal from "./AdminModal";
 import DeleteConfirm from "./DeleteConfirm";
 
 const EMPTY: ReviewFormPayload = {
-  name: "", avatar: "", rating: 5, rank: "", account_bought: "",
+  name: "", avatar: "", rating: 5, rank: "",
   date: "", review: "", verified: true, active: false, platform: "WhatsApp",
 };
 
@@ -21,9 +21,9 @@ export default function ReviewsTab() {
   const dispatch = useAppDispatch();
   const { list, loading, error, savingId, deletingId, togglingId } = useAppSelector((s) => s.adminReviews);
 
-  const [modal, setModal]           = useState<"add" | "edit" | null>(null);
-  const [form, setForm]             = useState<ReviewFormPayload>(EMPTY);
-  const [editId, setEditId]         = useState<string | null>(null);
+  const [modal, setModal] = useState<"add" | "edit" | null>(null);
+  const [form, setForm] = useState<ReviewFormPayload>(EMPTY);
+  const [editId, setEditId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminReview | null>(null);
 
   useEffect(() => {
@@ -61,7 +61,7 @@ export default function ReviewsTab() {
     };
     let result;
     if (modal === "add") result = await dispatch(addAdminReview(payload));
-    else if (editId)     result = await dispatch(updateAdminReview({ id: editId, payload }));
+    else if (editId) result = await dispatch(updateAdminReview({ id: editId, payload }));
     if (result && !addAdminReview.rejected.match(result) && !updateAdminReview.rejected.match(result)) {
       toast.success(modal === "add" ? "Review added" : "Review updated");
       setModal(null);
@@ -70,7 +70,7 @@ export default function ReviewsTab() {
     }
   }
 
-  function openAdd()  { setForm(EMPTY); setEditId(null); setModal("add"); }
+  function openAdd() { setForm(EMPTY); setEditId(null); setModal("add"); }
   function openEdit(row: AdminReview) {
     const { id, created_at, ...rest } = row;
     setForm(rest);
@@ -78,7 +78,7 @@ export default function ReviewsTab() {
     setModal("edit");
   }
 
-  const live    = list.filter((r) => r.active).length;
+  const live = list.filter((r) => r.active).length;
   const pending = list.filter((r) => !r.active).length;
 
   const columns = [
@@ -100,13 +100,11 @@ export default function ReviewsTab() {
           onClick={() => handleToggle(row)}
           disabled={togglingId === row.id || savingId === row.id}
           title={row.active ? "Click to unpublish" : "Click to publish"}
-          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
-            row.active ? "bg-emerald-500" : "bg-white/15"
-          }`}
+          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50 ${row.active ? "bg-emerald-500" : "bg-white/15"
+            }`}
         >
-          <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-            row.active ? "translate-x-4" : "translate-x-1"
-          }`} />
+          <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200 ${row.active ? "translate-x-4" : "translate-x-1"
+            }`} />
         </button>
       ),
     },
@@ -223,7 +221,7 @@ function ReviewForm({
         </Field>
         <Field label="Rating">
           <select value={form.rating} onChange={(e) => set("rating", Number(e.target.value))} className={sel}>
-            {[5,4,3,2,1].map((n) => <option key={n} value={n}>{n} ★</option>)}
+            {[5, 4, 3, 2, 1].map((n) => <option key={n} value={n}>{n} ★</option>)}
           </select>
         </Field>
       </div>
@@ -237,15 +235,12 @@ function ReviewForm({
             onChange={(e) => set("platform", e.target.value)}
             className={sel}
           >
-            {["WhatsApp", "Discord", "Instagram", "Direct"].map((p) => (
+            {["WhatsApp", "Discord", "Instagram", "Others"].map((p) => (
               <option key={p}>{p}</option>
             ))}
           </select>
         </Field>
       </div>
-      <Field label="Account Bought">
-        <input value={form.account_bought} onChange={(e) => set("account_bought", e.target.value)} className={inp} placeholder="Diamond Smurf — 25 Skins" />
-      </Field>
       <Field label="Date">
         <input value={form.date} onChange={(e) => set("date", e.target.value)} className={inp} placeholder="April 2026" />
       </Field>
@@ -306,9 +301,9 @@ function Btn({ children, onClick, disabled, variant = "ghost" }: {
   variant?: "ghost" | "primary" | "danger";
 }) {
   const s = {
-    ghost:   "text-white/50 hover:text-white border border-white/10 hover:border-white/20 hover:bg-white/5",
+    ghost: "text-white/50 hover:text-white border border-white/10 hover:border-white/20 hover:bg-white/5",
     primary: "text-white bg-white/10 hover:bg-white/15 border border-white/10",
-    danger:  "text-red-400 hover:text-red-300 border border-red-500/15 hover:border-red-500/30 hover:bg-red-500/5",
+    danger: "text-red-400 hover:text-red-300 border border-red-500/15 hover:border-red-500/30 hover:bg-red-500/5",
   };
   return (
     <button onClick={onClick} disabled={disabled}

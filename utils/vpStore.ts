@@ -78,7 +78,7 @@ export const STORE_CONFIG = {
     subtitle: "Get VP instantly · Philippines ID Only · UPI / Card Accepted",
     whatsappNumber: "918511037477",
     discordUrl: "https://dsc.gg/teamfury",
-    phone: "+91 8511037477",
+    whatsapp: "+91 8511037477",
     liveCount: 1005,
     trustBadges: [
         { icon: "⚡", label: "Instant Delivery" },

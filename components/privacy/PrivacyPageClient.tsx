@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { motion, useInView } from "motion/react";
-import { Shield, Mail, Phone, ExternalLink } from "lucide-react";
+import { Shield, Mail, MessageCircle, ExternalLink } from "lucide-react";
 
 // ── Animation wrapper ─────────────────────────────────────────────────────────
 
@@ -237,7 +237,7 @@ export default function PrivacyPageClient() {
               <a
                 // href="tel:+918511037477"
                 className="flex items-center gap-2.5 text-sm text-white/60 hover:text-red-400 transition-colors group">
-                <Phone size={14} className="text-red-500 shrink-0" />
+                <MessageCircle size={14} className="text-red-500 shrink-0" />
                 +91 8511037477
                 <ExternalLink size={11} className="opacity-0 group-hover:opacity-100 transition-opacity" />
               </a>
