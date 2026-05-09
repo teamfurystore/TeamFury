@@ -5,14 +5,14 @@ export const ABOUT_HERO = {
   description: [
     "At TEAM FURY, we're on a mission to bring trust, structure, and legitimacy to the Valorant account marketplace in India. We understand the uncertainty that often surrounds buying game accounts — and we're here to change that.",
     "Every account listed with us goes through a strict verification and background check to ensure it's sourced legally, ethically, and directly from original owners. We believe in a transparent and secure buying experience where customers know exactly what they're getting — no surprises, no shortcuts.",
-    "Over the past year, we've proudly sold 1000+ accounts, built a community of 1000+ happy buyers, and earned the trust of gamers across the country.",
+    "Over the past year, we've proudly sold 1500+ accounts, built a community of 1500+ happy buyers, and earned the trust of gamers across the country.",
     "Our goal is to remove the stigma around account reselling and make it a safer, smarter, and more accessible space for passionate players.",
   ],
 };
 
 export const ABOUT_STATS = [
-  { value: "1000+", label: "Accounts Sold" },
-  { value: "1000+", label: "Happy Buyers" },
+  { value: "1500+", label: "Accounts Sold" },
+  { value: "1500+", label: "Happy Buyers" },
   { value: "24/7", label: "Support" },
   { value: "100%", label: "Verified" },
 ];
@@ -41,7 +41,7 @@ export const ABOUT_WHY = [
   {
     emoji: "📈",
     title: "Proven Track Record",
-    desc: "With 1000+ successful sales and satisfied players, we've built a reputation on results, not promises. Our reviews speak for themselves.",
+    desc: "With 1500+ successful sales and satisfied players, we've built a reputation on results, not promises. Our reviews speak for themselves.",
   },
 ];
 

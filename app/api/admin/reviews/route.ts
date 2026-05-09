@@ -84,7 +84,7 @@ export async function POST(req: Request) {
   if (!ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { name, avatar, rating, rank, account_bought, date, review, verified, active, platform } = body;
+  const { name, avatar, rating, rank, date, review, verified, active, platform } = body;
 
   if (!name || !review || !rating) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -101,10 +101,9 @@ export async function POST(req: Request) {
       avatar: derivedAvatar,
       rating: Number(rating),
       rank: rank ?? "",
-      account_bought: account_bought ?? "",
       date: date ?? new Date().toISOString(),
       review,
-      platform: platform ?? "Direct",
+      platform: platform ?? "Others",
       verified: verified ?? false,
       active: active ?? false,
     }])

@@ -20,7 +20,7 @@ export default function WriteReviewForm() {
   const [hover, setHover] = useState(0);
   const [ratingError, setRatingError] = useState(false);
   const [form, setForm] = useState({
-    name: "", account_bought: "", rank: "", platform: "Direct", review: "",
+    name: "", rank: "", platform: "Others", review: "",
   });
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
@@ -38,7 +38,7 @@ export default function WriteReviewForm() {
     dispatch(resetSubmit());
     setRating(0);
     setRatingError(false);
-    setForm({ name: "", account_bought: "", rank: "", platform: "Direct", review: "" });
+    setForm({ name: "", rank: "", platform: "Others", review: "" });
   }
 
   if (submitSuccess) {
@@ -63,7 +63,7 @@ export default function WriteReviewForm() {
       <div>
         <p className="text-xs text-white/40 mb-2">Your Rating <span className="text-red-500">*</span></p>
         <div className="flex gap-1">
-          {[1,2,3,4,5].map((s) => (
+          {[1, 2, 3, 4, 5].map((s) => (
             <button key={s} type="button"
               onClick={() => { setRating(s); setRatingError(false); }}
               onMouseEnter={() => setHover(s)} onMouseLeave={() => setHover(0)}
@@ -75,17 +75,10 @@ export default function WriteReviewForm() {
         {ratingError && <p className="text-xs text-red-400 mt-1">Please select a rating.</p>}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid">
         <div className="flex flex-col gap-1.5">
           <label className="text-xs text-white/40">Your Name <span className="text-red-500">*</span></label>
           <input name="name" required value={form.name} onChange={handleChange} placeholder="e.g. Arjun S." className={inp} />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs text-white/40">Account Bought <span className="text-red-500">*</span></label>
-          <select name="account_bought" required value={form.account_bought} onChange={handleChange} className={sel}>
-            <option value="" disabled>Select account</option>
-            {ACCOUNTS.map((a) => <option key={a} value={a}>{a}</option>)}
-          </select>
         </div>
       </div>
 
@@ -97,7 +90,7 @@ export default function WriteReviewForm() {
         <div className="flex flex-col gap-1.5">
           <label className="text-xs text-white/40">Platform</label>
           <select name="platform" value={form.platform} onChange={handleChange} className={sel}>
-            {["WhatsApp","Discord","Instagram","Direct"].map((p) => <option key={p} value={p}>{p}</option>)}
+            {["WhatsApp", "Discord", "Instagram", "Others"].map((p) => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
       </div>

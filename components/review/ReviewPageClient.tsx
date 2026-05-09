@@ -14,7 +14,7 @@ import ErrorBoundary from "@/components/ui/ErrorBoundary";
 
 const MARQUEE_ITEMS = [
   "⭐ 4.9 Average Rating",
-  "✅ 1000+ Verified Reviews",
+  "✅ 1500+ Verified Reviews",
   "⚡ Instant Delivery",
   "🛡️ 100% Verified Accounts",
   "🤝 Post-Sale Support",
@@ -40,7 +40,7 @@ export default function ReviewPageClient() {
         <div className="relative max-w-3xl mx-auto">
           <ScrollReveal direction="up" delay={0} duration={0.6}>
             <p className="text-red-500 text-xs font-bold tracking-[0.4em] uppercase mb-4">
-              Trusted by 1000+ Gamers
+              Trusted by 1500+ Gamers
             </p>
           </ScrollReveal>
           <SplitText

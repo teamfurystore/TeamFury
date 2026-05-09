@@ -7,9 +7,10 @@ import ProductsTab from "@/components/admin/ProductsTab";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
 
 const TABS = [
-  { id: "contacts", label: "Contacts",  icon: "📬", desc: "Form submissions" },
-  { id: "reviews",  label: "Reviews",   icon: "⭐", desc: "Customer reviews"  },
-  { id: "products", label: "Products",  icon: "🎮", desc: "Account listings"  },
+  { id: "products", label: "Products", icon: "🎮", desc: "Account listings" },
+  { id: "reviews", label: "Reviews", icon: "⭐", desc: "Customer reviews" },
+  { id: "contacts", label: "Contacts", icon: "📬", desc: "Form submissions" },
+
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -31,11 +32,10 @@ export default function DashboardPage() {
           <button
             key={tab.id}
             onClick={() => setActive(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors relative -mb-px ${
-              active === tab.id
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors relative -mb-px ${active === tab.id
                 ? "text-white bg-white/6 border border-b-[#0f0f0f] border-white/10"
                 : "text-white/45 hover:text-white/70 hover:bg-white/4"
-            }`}
+              }`}
           >
             <span className="text-base leading-none">{tab.icon}</span>
             {tab.label}
@@ -46,7 +46,7 @@ export default function DashboardPage() {
       {/* Tab content */}
       <ErrorBoundary variant="inline">
         {active === "contacts" && <ContactsTab />}
-        {active === "reviews"  && <ReviewsTab />}
+        {active === "reviews" && <ReviewsTab />}
         {active === "products" && <ProductsTab />}
       </ErrorBoundary>
     </div>
