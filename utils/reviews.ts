@@ -8,7 +8,7 @@ export interface Review {
   date: string;
   review: string;
   verified: boolean;
-  platform: "WhatsApp" | "Discord" | "Instagram" | "Direct";
+  platform: "WhatsApp" | "Discord" | "Instagram" | "Others";
 }
 
 export const REVIEWS: Review[] = [
@@ -106,12 +106,12 @@ export const REVIEWS: Review[] = [
     date: "December 2025",
     review: "The Radiant account is absolutely insane. 55 skins, 6 knives — it's a collector's dream. The team was very professional and even gave me a discount for being a returning customer. TEAM FURY for life!",
     verified: true,
-    platform: "Direct",
+    platform: "Others",
   },
 ];
 
 export const REVIEW_STATS = {
-  totalReviews: 1000,
+  totalReviews: 100,
   averageRating: 4.9,
   fiveStarPercent: 94,
   fourStarPercent: 5,

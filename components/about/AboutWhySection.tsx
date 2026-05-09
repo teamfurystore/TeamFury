@@ -61,9 +61,8 @@ function ManifestoSection() {
           {lines.map((line, i) => (
             <div key={i} className="overflow-hidden">
               <motion.span
-                className={`block text-5xl md:text-7xl lg:text-8xl font-extrabold leading-tight px-4 ${
-                  line.accent ? "text-red-500 animate-glow" : "text-white"
-                }`}
+                className={`block text-5xl md:text-7xl lg:text-8xl font-extrabold leading-tight px-4 ${line.accent ? "text-red-500 animate-glow" : "text-white"
+                  }`}
                 initial={{ y: "110%", opacity: 0 }}
                 animate={inView ? { y: 0, opacity: 1 } : { y: "110%", opacity: 0 }}
                 transition={{ duration: 0.7, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
@@ -89,7 +88,7 @@ function ManifestoSection() {
 
 const MARQUEE_ITEMS = [
   "⚡ Instant Delivery", "🛡️ 100% Verified", "🤝 Post-Sale Support",
-  "🚫 Anti-Scam", "🎮 1000+ Accounts", "⭐ 4.9 Rating",
+  "🚫 Anti-Scam", "🎮 1500+ Accounts", "⭐ 4.9 Rating",
   "💬 24/7 Support", "🏆 Trusted by Gamers",
 ];
 
@@ -113,7 +112,7 @@ export default function AboutWhySection() {
           <span className="text-xs font-bold tracking-[0.3em] uppercase text-red-500">Why Us</span>
           <div className="mt-2 h-px w-12 bg-red-500" />
           <SplitText
-            text="Why 1000+ gamers choose TEAM FURY"
+            text="Why 1500+ gamers choose TEAM FURY"
             tag="h2"
             className="mt-3 text-3xl md:text-4xl font-extrabold"
             accentWords={["FURY"]}

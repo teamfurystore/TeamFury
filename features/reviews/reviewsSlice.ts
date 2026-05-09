@@ -10,18 +10,16 @@ export interface PublicReview {
   avatar: string;
   rating: number;
   rank: string;
-  account_bought: string;
   date: string;
   review: string;
   verified: boolean;
-  platform: "WhatsApp" | "Discord" | "Instagram" | "Direct";
+  platform: "WhatsApp" | "Discord" | "Instagram" | "Others";
 }
 
 export interface ReviewSubmitPayload {
   name: string;
   rating: number;
   rank: string;
-  account_bought: string;
   review: string;
   platform: string;
 }
@@ -139,19 +137,19 @@ export function selectReviewStats(list: PublicReview[]): ComputedReviewStats {
   // Coerce rating to number — Supabase REST can return numeric fields as strings
   const ratings = list.map((r) => Number(r.rating));
 
-  const sum     = ratings.reduce((acc, r) => acc + r, 0);
+  const sum = ratings.reduce((acc, r) => acc + r, 0);
   const average = Math.round((sum / total) * 10) / 10; // e.g. 2.5, 4.9
 
   const count = (star: number) => ratings.filter((r) => r === star).length;
-  const pct   = (star: number) => Math.round((count(star) / total) * 100);
+  const pct = (star: number) => Math.round((count(star) / total) * 100);
 
   return {
     total,
     average,
-    fivePct:  pct(5),
-    fourPct:  pct(4),
+    fivePct: pct(5),
+    fourPct: pct(4),
     threePct: pct(3),
-    twoPct:   pct(2),
-    onePct:   pct(1),
+    twoPct: pct(2),
+    onePct: pct(1),
   };
 }

@@ -10,7 +10,7 @@ const anon = createClient(
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { name, rating, rank, account_bought, review, platform } = body;
+  const { name, rating, rank, review, platform } = body;
 
   if (!name || !review || !rating) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -31,9 +31,8 @@ export async function POST(req: Request) {
       avatar,
       rating: Number(rating),
       rank: rank ?? "",
-      account_bought: account_bought ?? "",
       review,
-      platform: platform ?? "Direct",
+      platform: platform ?? "Others",
       verified: false,
       active: false,   // always pending until admin approves
       date: new Date(),
@@ -48,7 +47,7 @@ export async function POST(req: Request) {
 export async function GET() {
   const { data, error } = await anon
     .from("reviews")
-    .select("id, name, avatar, rating, rank, account_bought, date, review, verified, platform")
+    .select("id, name, avatar, rating, rank,  date, review, verified, platform")
     .eq("active", true)
     .order("created_at", { ascending: false });
 

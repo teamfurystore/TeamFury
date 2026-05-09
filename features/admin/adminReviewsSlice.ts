@@ -13,7 +13,6 @@ export interface AdminReview {
   avatar: string;
   rating: number;
   rank: string;
-  account_bought: string;
   date: string;
   review: string;
   verified: boolean;

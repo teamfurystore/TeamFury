@@ -189,12 +189,6 @@ export default function Footer() {
               >
                 teamfury.store@gmail.com
               </a>
-              <a
-                href="tel:+918511037477"
-                className="text-white/40 hover:text-red-400 text-xs transition-colors duration-200"
-              >
-                +91 8511037477
-              </a>
             </div>
           </motion.div>
         </div>

@@ -1,6 +1,6 @@
 import { Star, BadgeCheck } from "lucide-react";
 
-type Platform = "WhatsApp" | "Discord" | "Instagram" | "Direct";
+type Platform = "WhatsApp" | "Discord" | "Instagram" | "Others";
 
 export interface ReviewCardData {
   id: string;
@@ -8,7 +8,6 @@ export interface ReviewCardData {
   avatar: string;
   rating: number;
   rank: string;
-  account_bought: string;
   date: string;
   review: string;
   verified: boolean;
@@ -16,10 +15,10 @@ export interface ReviewCardData {
 }
 
 const PLATFORM_COLORS: Record<Platform, string> = {
-  WhatsApp:  "text-green-400 bg-green-400/10 border-green-400/20",
-  Discord:   "text-indigo-400 bg-indigo-400/10 border-indigo-400/20",
+  WhatsApp: "text-green-400 bg-green-400/10 border-green-400/20",
+  Discord: "text-indigo-400 bg-indigo-400/10 border-indigo-400/20",
   Instagram: "text-pink-400 bg-pink-400/10 border-pink-400/20",
-  Direct:    "text-blue-400 bg-blue-400/10 border-blue-400/20",
+  Others: "text-blue-400 bg-blue-400/10 border-blue-400/20",
 };
 
 interface Props {
@@ -54,7 +53,7 @@ export default function ReviewCard({ review, style }: Props) {
 
       {/* Stars */}
       <div className="flex gap-0.5">
-        {[1,2,3,4,5].map((s) => (
+        {[1, 2, 3, 4, 5].map((s) => (
           <Star
             key={s}
             size={13}
@@ -68,10 +67,6 @@ export default function ReviewCard({ review, style }: Props) {
 
       {/* Footer */}
       <div className="flex items-center justify-between pt-3 border-t border-white/10">
-        <div>
-          <p className="text-[10px] text-white/30 uppercase tracking-wider">Account Bought</p>
-          <p className="text-xs text-white/60 font-medium mt-0.5">{review.account_bought}</p>
-        </div>
         {review.rank && (
           <span className="text-xs text-white/40 bg-white/5 px-2.5 py-1 rounded-full shrink-0">
             {review.rank}

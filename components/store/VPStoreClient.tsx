@@ -170,10 +170,6 @@ export default function VPStoreClient() {
                             <p className="text-xs text-white/40">Contact us directly on WhatsApp or Discord.</p>
                         </div>
                         <div className="flex gap-2 shrink-0">
-                            <a href={`tel:${STORE_CONFIG.phone}`}
-                                className="flex items-center gap-1.5 text-xs font-semibold border border-white/10 hover:border-white/25 text-white/50 hover:text-white px-4 py-2 rounded-full transition-all">
-                                📞 Call
-                            </a>
                             <a href={STORE_CONFIG.discordUrl} target="_blank" rel="noopener noreferrer"
                                 className="flex items-center gap-1.5 text-xs font-semibold border border-[#5865F2]/25 hover:border-[#5865F2]/50 text-[#7289da] px-4 py-2 rounded-full transition-all">
                                 💬 Discord
