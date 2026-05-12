@@ -1,10 +1,18 @@
 "use client";
 
 import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { useAccountsAvailable } from "@/hooks/useAccountsAvailable";
 import { SITE_CONFIG } from "@/utils/config";
 
 export default function Hero() {
   const { ref, visible } = useScrollReveal(0.2);
+  const accountsAvailable = useAccountsAvailable();
+
+  const stats = SITE_CONFIG.stats.map((s) =>
+    s.label.includes("Accounts Available")
+      ? { label: accountsAvailable !== null ? `${accountsAvailable} Accounts Available` : s.label }
+      : s
+  );
 
   return (
     <section
@@ -13,21 +21,18 @@ export default function Hero() {
     >
       {/* Ambient glows — animate on reveal */}
       <div
-        className={`absolute -top-10 -left-10 w-64 h-64 bg-red-600/10 rounded-full blur-3xl pointer-events-none transition-all duration-1000 ${
-          visible ? "opacity-100 scale-100" : "opacity-0 scale-50"
-        }`}
+        className={`absolute -top-10 -left-10 w-64 h-64 bg-red-600/10 rounded-full blur-3xl pointer-events-none transition-all duration-1000 ${visible ? "opacity-100 scale-100" : "opacity-0 scale-50"
+          }`}
       />
       <div
-        className={`absolute -bottom-10 -right-10 w-64 h-64 bg-purple-600/10 rounded-full blur-3xl pointer-events-none transition-all duration-1000 delay-300 ${
-          visible ? "opacity-100 scale-100" : "opacity-0 scale-50"
-        }`}
+        className={`absolute -bottom-10 -right-10 w-64 h-64 bg-purple-600/10 rounded-full blur-3xl pointer-events-none transition-all duration-1000 delay-300 ${visible ? "opacity-100 scale-100" : "opacity-0 scale-50"
+          }`}
       />
 
       {/* Tagline */}
       <p
-        className={`text-red-500 text-xs font-bold tracking-[0.35em] uppercase mb-3 transition-all duration-600 ${
-          visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-6"
-        }`}
+        className={`text-red-500 text-xs font-bold tracking-[0.35em] uppercase mb-3 transition-all duration-600 ${visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-6"
+          }`}
       >
         {SITE_CONFIG.tagline}
       </p>
@@ -35,17 +40,16 @@ export default function Hero() {
       {/* H1 — word-by-word stagger */}
       <h1 className="text-5xl md:text-6xl font-extrabold leading-tight mb-6">
         {[
-          { word: "Get",      accent: false },
-          { word: "Your",     accent: false },
-          { word: "Dream",    accent: true  },
-          { word: "Valorant", accent: true  },
-          { word: "Account",  accent: false },
+          { word: "Get", accent: false },
+          { word: "Your", accent: false },
+          { word: "Dream", accent: true },
+          { word: "Valorant", accent: true },
+          { word: "Account", accent: false },
         ].map(({ word, accent }, i) => (
           <span
             key={word}
-            className={`inline-block mr-3 transition-all duration-700 ${
-              visible ? "opacity-100 translate-y-0 blur-0" : "opacity-0 translate-y-10 blur-sm"
-            } ${accent ? "text-red-500 animate-glow" : ""}`}
+            className={`inline-block mr-3 transition-all duration-700 ${visible ? "opacity-100 translate-y-0 blur-0" : "opacity-0 translate-y-10 blur-sm"
+              } ${accent ? "text-red-500 animate-glow" : ""}`}
             style={{ transitionDelay: `${i * 100}ms` }}
           >
             {word}
@@ -55,21 +59,19 @@ export default function Hero() {
 
       {/* Description */}
       <p
-        className={`text-white/60 text-lg max-w-xl mx-auto mb-10 transition-all duration-700 delay-500 ${
-          visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-        }`}
+        className={`text-white/60 text-lg max-w-xl mx-auto mb-10 transition-all duration-700 delay-500 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+          }`}
       >
         {SITE_CONFIG.description}
       </p>
 
       {/* Stats */}
       <div className="flex flex-wrap justify-center gap-3 mb-10">
-        {SITE_CONFIG.stats.map((s, idx) => (
+        {stats.map((s, idx) => (
           <span
             key={s.label}
-            className={`bg-white/5 border border-white/10 text-white/70 text-sm px-4 py-1.5 rounded-full transition-all duration-500 ${
-              visible ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-90 translate-y-4"
-            }`}
+            className={`bg-white/5 border border-white/10 text-white/70 text-sm px-4 py-1.5 rounded-full transition-all duration-500 ${visible ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-90 translate-y-4"
+              }`}
             style={{ transitionDelay: `${600 + idx * 100}ms` }}
           >
             {s.label}
@@ -79,9 +81,8 @@ export default function Hero() {
 
       {/* CTAs */}
       <div
-        className={`flex flex-wrap justify-center gap-4 transition-all duration-700 delay-[900ms] ${
-          visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-        }`}
+        className={`flex flex-wrap justify-center gap-4 transition-all duration-700 delay-[900ms] ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+          }`}
       >
         <a
           href={SITE_CONFIG.shopUrl}

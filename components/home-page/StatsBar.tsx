@@ -4,22 +4,9 @@ import { useEffect, useState } from "react";
 import AnimatedCounter from "@/components/ui/AnimatedCounter";
 import StaggerReveal from "@/components/ui/StaggerReveal";
 
-interface Stat {
-  to: number;
-  suffix: string;
-  label: string;
-  prefix: string;
-  decimals?: number;
-}
-
-const STATIC_STATS: Stat[] = [
-  { to: 1500, suffix: "+", label: "Accounts Sold", prefix: "" },
-  { to: 5, suffix: "m", label: "Avg Delivery", prefix: "< " },
-];
-
 export default function StatsBar() {
   const [rating, setRating] = useState<number>(4.9);
-  const [accountsAvailable, setAccountsAvailable] = useState<number>(0);
+  const [accountsAvailable, setAccountsAvailable] = useState<number | null>(null);
 
   useEffect(() => {
     // Fetch live active product count
@@ -46,13 +33,6 @@ export default function StatsBar() {
       .catch(() => { });
   }, []);
 
-  const stats: Stat[] = [
-    STATIC_STATS[0],
-    { to: rating, suffix: "", label: "Average Rating", prefix: "⭐ ", decimals: 1 },
-    { to: accountsAvailable, suffix: "", label: "Accounts Available", prefix: "" },
-    STATIC_STATS[1],
-  ];
-
   return (
     <section className="py-14 px-6 border-y border-white/5 bg-white/2">
       <StaggerReveal
@@ -61,20 +41,51 @@ export default function StatsBar() {
         y={30}
         duration={0.65}
       >
-        {stats.map((s) => (
-          <div key={s.label} className="flex flex-col items-center gap-1.5">
-            <span className="text-3xl md:text-4xl font-extrabold text-white tabular-nums">
+        {/* Accounts Sold — static */}
+        <div className="flex flex-col items-center gap-1.5">
+          <span className="text-3xl md:text-4xl font-extrabold text-white tabular-nums">
+            <AnimatedCounter to={1500} suffix="+" duration={1.8} />
+          </span>
+          <span className="text-xs text-white/40 uppercase tracking-widest">Accounts Sold</span>
+        </div>
+
+        {/* Average Rating — live */}
+        <div className="flex flex-col items-center gap-1.5">
+          <span className="text-3xl md:text-4xl font-extrabold text-white tabular-nums">
+            <AnimatedCounter
+              key={`rating-${rating}`}
+              to={rating}
+              prefix="⭐ "
+              decimals={1}
+              duration={1.8}
+            />
+          </span>
+          <span className="text-xs text-white/40 uppercase tracking-widest">Average Rating</span>
+        </div>
+
+        {/* Accounts Available — live */}
+        <div className="flex flex-col items-center gap-1.5">
+          <span className="text-3xl md:text-4xl font-extrabold text-white tabular-nums">
+            {accountsAvailable === null ? (
+              <span className="animate-pulse text-white/30">—</span>
+            ) : (
               <AnimatedCounter
-                to={s.to}
-                prefix={s.prefix}
-                suffix={s.suffix}
-                decimals={s.decimals ?? 0}
+                key={`available-${accountsAvailable}`}
+                to={accountsAvailable}
                 duration={1.8}
               />
-            </span>
-            <span className="text-xs text-white/40 uppercase tracking-widest">{s.label}</span>
-          </div>
-        ))}
+            )}
+          </span>
+          <span className="text-xs text-white/40 uppercase tracking-widest">Accounts Available</span>
+        </div>
+
+        {/* Avg Delivery — static */}
+        <div className="flex flex-col items-center gap-1.5">
+          <span className="text-3xl md:text-4xl font-extrabold text-white tabular-nums">
+            <AnimatedCounter to={5} prefix="< " suffix="m" duration={1.8} />
+          </span>
+          <span className="text-xs text-white/40 uppercase tracking-widest">Avg Delivery</span>
+        </div>
       </StaggerReveal>
     </section>
   );
