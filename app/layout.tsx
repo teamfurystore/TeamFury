@@ -18,12 +18,35 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  icons: {
-    icon: '/teamFuryIcon.svg',
-  },
   title: "TEAM FURY | Premium Valorant Accounts",
-  description:
-    "Get your dream Valorant account with exclusive skins, rare knives, and premium collections.",
+  description: "Get your dream Valorant account with exclusive skins, rare knives, and more.",
+  metadataBase: new URL("https://www.teamfury.store"),
+  openGraph: {
+    title: "TEAM FURY | Premium Valorant Accounts",
+    description: "Get your dream Valorant account with exclusive skins, rare knives, and more.",
+    url: "https://www.teamfury.store/",
+    siteName: "Team Fury",
+    images: [
+      {
+        url: "/TeamFuryLogo.png",  // put your logo/banner in the public folder
+        width: 1200,
+        height: 630,
+        alt: "Team Fury",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "TEAM FURY | Premium Valorant Accounts",
+    description: "Get your dream Valorant account with exclusive skins, rare knives, and more.",
+    images: ["/TeamFuryLogo.png"],
+  },
+  icons: {
+    icon: "/teamFuryIcon.svg",
+    shortcut: "/teamFuryIcon.svg",
+    apple: "/teamFuryIcon.svg",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
