@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRef } from "react";
 import { motion, useInView } from "motion/react";
+import { useAccountsAvailable } from "@/hooks/useAccountsAvailable";
 import { SITE_CONFIG, NAV_LINKS } from "@/utils/config";
 
 const SOCIAL_LINKS = [
@@ -73,6 +74,13 @@ function AnimatedLink({
 export default function Footer() {
   const ref = useRef<HTMLElement>(null);
   const inView = useInView(ref, { once: true, margin: "-40px" });
+  const accountsAvailable = useAccountsAvailable();
+
+  const stats = SITE_CONFIG.stats.map((s) =>
+    s.label.includes("Accounts Available")
+      ? { label: accountsAvailable !== null ? `${accountsAvailable} Accounts Available` : s.label }
+      : s
+  );
 
   const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -112,7 +120,7 @@ export default function Footer() {
 
             {/* Stats pills */}
             <div className="flex flex-wrap gap-2 mt-1">
-              {SITE_CONFIG.stats.map((s) => (
+              {stats.map((s) => (
                 <span
                   key={s.label}
                   className="text-[10px] text-white/40 border border-white/8 px-2.5 py-1 rounded-full"
