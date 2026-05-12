@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ShoppingCart, Shield, Zap, CheckCircle, ArrowLeft, Check, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { ShoppingCart, Shield, Zap, CheckCircle, ArrowLeft, Check, X, ChevronLeft, ChevronRight, MessageCircle } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { RANK_COLORS } from "@/utils/products";
+import { FURY_VALORANT } from "@/utils/config";
 import { type DbProduct, type DbProductItem } from "@/features/products/productsSlice";
 import { useCart } from "@/contexts/CartContext";
 import ProductCard from "./ProductCard";
@@ -334,11 +335,23 @@ export default function ProductDetailClient({ product, related }: Props) {
               </button>
 
               <a
-                href={`https://wa.me/918511037477?text=Hi%20TEAM%20FURY!%20I%20want%20to%20buy%20${encodeURIComponent(product.title)}`}
+                href={(() => {
+                  let msg = "Hi TEAM FURY! I want to place the following order:\n\n";
+                  msg += "🎮 *Valorant Accounts:*\n";
+                  msg += `1. ${product.title}\n`;
+                  msg += `   • Rank: ${product.current_rank} (Peak: ${product.peak_rank})\n`;
+                  msg += `   • Skins: ${product.skins} | Knives: ${product.knives}\n`;
+                  msg += `   • Price: ₹${product.discounted_price.toLocaleString("en-IN")}\n`;
+                  msg += `   • URL: ${FURY_VALORANT}/shop/${product.slug}\n\n`;
+                  msg += `Accounts subtotal: ₹${product.discounted_price.toLocaleString("en-IN")} (1 account)\n\n`;
+                  msg += `💰 *Grand Total: ₹${product.discounted_price.toLocaleString("en-IN")}*\n\n`;
+                  msg += "Please confirm availability and send payment details. Thank you!";
+                  return `https://wa.me/918511037477?text=${encodeURIComponent(msg)}`;
+                })()}
                 target="_blank" rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2 border border-emerald-500/30 hover:border-emerald-400/60 text-emerald-400 hover:text-emerald-300 font-semibold py-4 rounded-full transition-all text-sm"
+                className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-full transition-all hover:scale-105 active:scale-95 text-sm"
               >
-                💬 Buy via WhatsApp
+                <MessageCircle size={15} /> Buy via WhatsApp
               </a>
             </div>
           </div>
