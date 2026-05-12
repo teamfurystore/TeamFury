@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     siteName: "Team Fury",
     images: [
       {
-        url: "/TeamFuryLogo.png",  // put your logo/banner in the public folder
+        url: "/tf_logo_hd.jpg",  // put your logo/banner in the public folder
         width: 1200,
         height: 630,
         alt: "Team Fury",
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "TEAM FURY | Premium Valorant Accounts",
     description: "Get your dream Valorant account with exclusive skins, rare knives, and more.",
-    images: ["/TeamFuryLogo.png"],
+    images: ["/tf_logo_hd.jpg"],
   },
   icons: {
     icon: "/teamFuryIcon.svg",
