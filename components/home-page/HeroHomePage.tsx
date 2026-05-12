@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
+import { useAccountsAvailable } from "@/hooks/useAccountsAvailable";
 import { SITE_CONFIG } from "@/utils/config";
 
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -10,6 +11,13 @@ const ease = [0.16, 1, 0.3, 1] as const;
 export default function HeroHomePage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [loaded, setLoaded] = useState(false);
+  const accountsAvailable = useAccountsAvailable();
+
+  const stats = SITE_CONFIG.stats.map((s) =>
+    s.label.includes("Accounts Available")
+      ? { label: accountsAvailable !== null ? `${accountsAvailable} Accounts Available` : s.label }
+      : s
+  );
 
   useEffect(() => {
     const v = videoRef.current;
@@ -91,7 +99,7 @@ export default function HeroHomePage() {
           animate={loaded ? { opacity: 1 } : {}}
           transition={{ duration: 0.6, delay: 1.1 }}
         >
-          {SITE_CONFIG.stats.map((s, idx) => (
+          {stats.map((s, idx) => (
             <motion.span
               key={s.label}
               className="bg-white/8 backdrop-blur border border-white/12 text-white/70 text-sm px-4 py-1.5 rounded-full"
