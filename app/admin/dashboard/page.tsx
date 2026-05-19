@@ -16,7 +16,7 @@ const TABS = [
 type TabId = (typeof TABS)[number]["id"];
 
 export default function DashboardPage() {
-  const [active, setActive] = useState<TabId>("contacts");
+  const [active, setActive] = useState<TabId>("products");
 
   return (
     <div>
@@ -33,8 +33,8 @@ export default function DashboardPage() {
             key={tab.id}
             onClick={() => setActive(tab.id)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors relative -mb-px ${active === tab.id
-                ? "text-white bg-white/6 border border-b-[#0f0f0f] border-white/10"
-                : "text-white/45 hover:text-white/70 hover:bg-white/4"
+              ? "text-white bg-white/6 border border-b-[#0f0f0f] border-white/10"
+              : "text-white/45 hover:text-white/70 hover:bg-white/4"
               }`}
           >
             <span className="text-base leading-none">{tab.icon}</span>
