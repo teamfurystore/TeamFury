@@ -11,6 +11,7 @@ import {
 import AdminTable from "./AdminTable";
 import AdminModal from "./AdminModal";
 import DeleteConfirm from "./DeleteConfirm";
+import { Search, X } from "lucide-react";
 
 const EMPTY: ReviewFormPayload = {
   name: "", avatar: "", rating: 5, rank: "",
@@ -25,6 +26,17 @@ export default function ReviewsTab() {
   const [form, setForm] = useState<ReviewFormPayload>(EMPTY);
   const [editId, setEditId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminReview | null>(null);
+  const [query, setQuery] = useState("");
+  const displayed = query.trim()
+    ? list.filter((r) =>
+      r.name.toLowerCase().includes(query.toLowerCase()) ||
+      r.review.toLowerCase().includes(query.toLowerCase()) ||
+      r.platform.toLowerCase().includes(query.toLowerCase()) ||
+      r.rating.toString().includes(query.toLowerCase()) ||
+      r.active.toString().includes(query.toLowerCase()) ||
+      r.rank.toLowerCase().includes(query.toLowerCase())
+    )
+    : list;
 
   useEffect(() => {
     dispatch(fetchAdminReviews());
@@ -134,28 +146,48 @@ export default function ReviewsTab() {
     <div className="flex flex-col gap-4">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-white">Reviews</p>
-          <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-xs text-white/40">{list.length} total</span>
-            {live > 0 && (
-              <span className="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/15 px-1.5 py-0.5 rounded-md">
-                {live} live
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-white">Reviews</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-xs text-white/40">
+                {displayed.length}{displayed.length !== list.length ? ` of ${list.length}` : ""} total
               </span>
-            )}
-            {pending > 0 && (
-              <span className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/15 px-1.5 py-0.5 rounded-md">
-                {pending} pending
-              </span>
-            )}
+              {live > 0 && (
+                <span className="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/15 px-1.5 py-0.5 rounded-md">
+                  {live} live
+                </span>
+              )}
+              {pending > 0 && (
+                <span className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/15 px-1.5 py-0.5 rounded-md">
+                  {pending} pending
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-1.5">
+            <Btn variant="ghost" onClick={() => dispatch(fetchAdminReviews())} disabled={loading}>
+              {loading ? "Loading…" : "↻ Refresh"}
+            </Btn>
+            <Btn variant="primary" onClick={openAdd}>+ Add Review</Btn>
           </div>
         </div>
-        <div className="flex gap-1.5">
-          <Btn variant="ghost" onClick={() => dispatch(fetchAdminReviews())} disabled={loading}>
-            {loading ? "Loading…" : "↻ Refresh"}
-          </Btn>
-          <Btn variant="primary" onClick={openAdd}>+ Add Review</Btn>
+        {/* Search */}
+        <div className="relative max-w-sm">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search name, review, platform…"
+            className="w-full bg-white/5 border border-white/10 rounded-xl pl-8 pr-8 py-2 text-xs text-white placeholder-white/25 focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/20 transition-all"
+          />
+          {query && (
+            <button onClick={() => setQuery("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors">
+              <X size={12} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -168,9 +200,9 @@ export default function ReviewsTab() {
 
       <AdminTable
         columns={columns}
-        data={list}
+        data={displayed}
         loading={loading}
-        emptyMessage="No reviews yet"
+        emptyMessage="No reviews found"
       />
 
       {modal && (
