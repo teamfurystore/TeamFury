@@ -3,9 +3,11 @@
 import { useRouter } from "next/navigation";
 import { Toaster } from "sonner";
 import { supabase } from "@/utils/supabaseClient";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  useAdminAuth(); // redirect to /admin on any 401 from API routes
 
   async function handleLogout() {
     await supabase.auth.signOut();
