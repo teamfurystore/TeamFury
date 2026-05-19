@@ -11,6 +11,16 @@ import DeleteConfirm from "./DeleteConfirm";
 import SkinPickerPopup from "@/components/shop/SkinPickerPopup";
 import { type Rank } from "@/utils/products";
 import { ROUTE_ADMIN_PRODUCTS, ROUTE_ADMIN_PRODUCT_DELETE } from "@/utils/routes";
+import { ArrowUpDown, Search, X } from "lucide-react";
+
+const SORT_OPTIONS = [
+  { label: "Most Recent", value: "recent" },
+  { label: "Oldest", value: "oldest" },
+  { label: "Price: Low → High", value: "price-asc" },
+  { label: "Price: High → Low", value: "price-desc" },
+  { label: "Most Skins", value: "skins" },
+] as const;
+type SortValue = (typeof SORT_OPTIONS)[number]["value"];
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -49,15 +59,6 @@ interface Product {
 type NumericField = "price" | "discounted_price" | "skins" | "knives" | "battle_passes" | "level";
 type FormState = Omit<Product, "id" | NumericField> & {
   [K in NumericField]: number | "";
-};
-
-type RootState = {
-  adminProducts: {
-    togglingId: string | null;
-  };
-  skins: {
-    savedSelections: Record<string, SelectedSkin[]>;
-  };
 };
 
 const RANKS: Rank[] = ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"];
@@ -114,7 +115,44 @@ export default function ProductsTab() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [skinsTarget, setSkinsTarget] = useState<Product | null>(null);
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<SortValue>("recent");
+  const [sortOpen, setSortOpen] = useState(false);
 
+  // Close sort dropdown on outside click
+  useEffect(() => {
+    if (!sortOpen) return;
+    const handler = () => setSortOpen(false);
+    window.addEventListener("click", handler);
+    return () => window.removeEventListener("click", handler);
+  }, [sortOpen]);
+
+  // Derived: filtered + sorted view of data
+  const displayed = (() => {
+    let items = [...data];
+    const q = query.trim().toLowerCase();
+    if (q) {
+      items = items.filter((p) =>
+        p.title.toLowerCase().includes(q) ||
+        p.slug.toLowerCase().includes(q) ||
+        p.peak_rank.toLowerCase().includes(q) ||
+        p.discounted_price.toString().includes(q) ||
+        p.price.toString().includes(q) ||
+        p.current_rank.toLowerCase().includes(q) ||
+        p.current_rank.toLowerCase().includes(q) ||
+        p.badge?.toLowerCase().includes(q) ||
+        p.region.toLowerCase().includes(q)
+      );
+    }
+    switch (sort) {
+      case "recent": items.sort((a, b) => b.id.localeCompare(a.id)); break;
+      case "oldest": items.sort((a, b) => a.id.localeCompare(b.id)); break;
+      case "price-asc": items.sort((a, b) => a.discounted_price - b.discounted_price); break;
+      case "price-desc": items.sort((a, b) => b.discounted_price - a.discounted_price); break;
+      case "skins": items.sort((a, b) => b.product_items.length - a.product_items.length); break;
+    }
+    return items;
+  })();
   // Image state — file is the new upload, preview is what's shown in the form
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -349,14 +387,12 @@ export default function ProductsTab() {
           onClick={() => handleToggle(row)}
           disabled={togglingId === row.id || savingId === row.id}
           title={row.active ? "Click to unpublish" : "Click to publish"}
-          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
-            row.active ? "bg-emerald-500" : "bg-white/15"
-          }`}
+          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50 ${row.active ? "bg-emerald-500" : "bg-white/15"
+            }`}
         >
           <span
-            className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-              row.active ? "translate-x-4" : "translate-x-1"
-            }`}
+            className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200 ${row.active ? "translate-x-4" : "translate-x-1"
+              }`}
           />
         </button>
       ),
@@ -395,34 +431,83 @@ export default function ProductsTab() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-white">Products</p>
-          <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-xs text-white/40">{data.length} total</span>
-            {active > 0 && (
-              <span className="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/15 px-1.5 py-0.5 rounded-md">
-                {active} active
+      {/* ── Toolbar ── */}
+      <div className="flex flex-col gap-3">
+        {/* Row 1: title + actions */}
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-white">Products</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-xs text-white/40">
+                {displayed.length}{displayed.length !== data.length ? ` of ${data.length}` : ""} total
               </span>
+              {active > 0 && (
+                <span className="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/15 px-1.5 py-0.5 rounded-md">
+                  {active} active
+                </span>
+              )}
+              {inactive > 0 && (
+                <span className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/15 px-1.5 py-0.5 rounded-md">
+                  {inactive} inactive
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-1.5">
+            <Btn variant="ghost" onClick={load} disabled={loading}>↻ Refresh</Btn>
+            <Btn variant="primary" onClick={openAdd}>+ Add Product</Btn>
+          </div>
+        </div>
+
+        {/* Row 2: search + sort */}
+        <div className="flex items-center gap-2">
+          {/* Search */}
+          <div className="relative flex-1 max-w-sm">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search title, rank, badge…"
+              className="w-full bg-white/5 border border-white/10 rounded-xl pl-8 pr-8 py-2 text-xs text-white placeholder-white/25 focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/20 transition-all"
+            />
+            {query && (
+              <button onClick={() => setQuery("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors">
+                <X size={12} />
+              </button>
             )}
-            {inactive > 0 && (
-              <span className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/15 px-1.5 py-0.5 rounded-md">
-                {inactive} inactive
-              </span>
+          </div>
+
+          {/* Sort dropdown */}
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setSortOpen((v) => !v)}
+              className={`flex items-center gap-2 text-xs font-medium px-3 py-2 rounded-xl border transition-all ${sortOpen ? "bg-white/10 border-white/20 text-white" : "bg-white/5 border-white/10 text-white/50 hover:text-white hover:border-white/20"
+                }`}
+            >
+              <ArrowUpDown size={12} />
+              {SORT_OPTIONS.find((o) => o.value === sort)?.label}
+            </button>
+            {sortOpen && (
+              <div className="absolute right-0 top-full mt-1.5 w-44 bg-[#161616] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50">
+                {SORT_OPTIONS.map((o) => (
+                  <button
+                    key={o.value}
+                    onClick={() => { setSort(o.value); setSortOpen(false); }}
+                    className={`w-full text-left px-4 py-2.5 text-xs flex items-center justify-between transition-colors ${sort === o.value ? "text-white bg-white/8" : "text-white/50 hover:text-white hover:bg-white/5"
+                      }`}
+                  >
+                    {o.label}
+                    {sort === o.value && <span className="w-1.5 h-1.5 rounded-full bg-red-500" />}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
         </div>
-        <div className="flex gap-1.5">
-          <Btn variant="ghost" onClick={load} disabled={loading}>
-            ↻ Refresh
-          </Btn>
-          <Btn variant="primary" onClick={openAdd}>
-            + Add Product
-          </Btn>
-        </div>
       </div>
 
-      <AdminTable columns={columns} data={data} loading={loading} emptyMessage="No products yet" />
+      <AdminTable columns={columns} data={displayed} loading={loading} emptyMessage="No products found" />
 
       {modal && (
         <AdminModal title={modal === "add" ? "Add Product" : "Edit Product"} onClose={closeModal} size="lg">
