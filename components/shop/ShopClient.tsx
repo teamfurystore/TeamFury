@@ -15,10 +15,10 @@ const RANK_OPTIONS: Rank[] = [
 ];
 
 const SORT_OPTIONS = [
-  { label: "Price: Low to High", value: "price-asc"  },
+  { label: "Price: Low to High", value: "price-asc" },
   { label: "Price: High to Low", value: "price-desc" },
-  { label: "Most Skins",         value: "skins"      },
-  { label: "Highest Rank",       value: "rank"       },
+  { label: "Most Skins", value: "skins" },
+  { label: "Highest Rank", value: "rank" },
 ];
 
 export default function ShopClient() {
@@ -53,9 +53,9 @@ export default function ShopClient() {
       items = items.filter((p) => p.current_rank === filterRank);
 
     // Sort
-    if (sort === "price-asc")  items.sort((a, b) => a.discounted_price - b.discounted_price);
+    if (sort === "price-asc") items.sort((a, b) => a.discounted_price - b.discounted_price);
     if (sort === "price-desc") items.sort((a, b) => b.discounted_price - a.discounted_price);
-    if (sort === "skins")      items.sort((a, b) => b.skins - a.skins);
+    if (sort === "skins") items.sort((a, b) => b.skins - a.skins);
     if (sort === "rank")
       items.sort((a, b) => RANK_OPTIONS.indexOf(b.current_rank) - RANK_OPTIONS.indexOf(a.current_rank));
 

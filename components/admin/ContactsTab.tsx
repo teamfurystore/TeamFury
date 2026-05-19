@@ -7,17 +7,27 @@ import { fetchAdminContacts, deleteContact, type Contact } from "@/features/cont
 import AdminTable from "./AdminTable";
 import AdminModal from "./AdminModal";
 import DeleteConfirm from "./DeleteConfirm";
+import { Search, X } from "lucide-react";
 
 export default function ContactsTab() {
   const dispatch = useAppDispatch();
   const { list, listLoading, listError, deleteLoading } = useAppSelector((s) => s.contacts);
   const [viewing, setViewing] = useState<Contact | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Contact | null>(null);
+  const [query, setQuery] = useState("");
 
-  useEffect(() => { 
-    dispatch(fetchAdminContacts()); 
+  const displayed = query.trim()
+    ? list.filter((c) =>
+      c.name.toLowerCase().includes(query.toLowerCase()) ||
+      c.email.toLowerCase().includes(query.toLowerCase()) ||
+      c.subject.toLowerCase().includes(query.toLowerCase())
+    )
+    : list;
+
+  useEffect(() => {
+    dispatch(fetchAdminContacts());
   },
-   [dispatch]);
+    [dispatch]);
 
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -31,8 +41,8 @@ export default function ContactsTab() {
   }
 
   const columns = [
-    { key: "name",    label: "Name" },
-    { key: "email",   label: "Email" },
+    { key: "name", label: "Name" },
+    { key: "email", label: "Email" },
     { key: "subject", label: "Subject" },
     {
       key: "created_at",
@@ -58,30 +68,48 @@ export default function ContactsTab() {
     <div className="flex flex-col gap-4">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-white">Contact Submissions</p>
-          <p className="text-xs text-white/40 mt-0.5">
-            {listLoading ? "Loading…" : `${list.length} message${list.length !== 1 ? "s" : ""}`}
-          </p>
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-white">Contact Submissions</p>
+            <p className="text-xs text-white/40 mt-0.5">
+              {listLoading ? "Loading…" : `${displayed.length}${displayed.length !== list.length ? ` of ${list.length}` : ""} message${list.length !== 1 ? "s" : ""}`}
+            </p>
+          </div>
+          <Btn variant="ghost" onClick={() => dispatch(fetchAdminContacts())} disabled={listLoading}>
+            {listLoading ? "Refreshing…" : "↻ Refresh"}
+          </Btn>
         </div>
-        <Btn variant="ghost" onClick={() => dispatch(fetchAdminContacts())} disabled={listLoading}>
-          {listLoading ? "Refreshing…" : "↻ Refresh"}
-        </Btn>
+        {/* Search */}
+        <div className="relative max-w-sm">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search name, email, subject…"
+            className="w-full bg-white/5 border border-white/10 rounded-xl pl-8 pr-8 py-2 text-xs text-white placeholder-white/25 focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/20 transition-all"
+          />
+          {query && (
+            <button onClick={() => setQuery("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors">
+              <X size={12} />
+            </button>
+          )}
+        </div>
       </div>
 
       {listError && <Alert>{listError}</Alert>}
 
-      <AdminTable columns={columns} data={list} loading={listLoading} emptyMessage="No contact submissions yet" />
+      <AdminTable columns={columns} data={displayed} loading={listLoading} emptyMessage="No contact submissions found" />
 
       {/* View modal */}
       {viewing && (
         <AdminModal title="Contact Message" onClose={() => setViewing(null)}>
           <div className="flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-3">
-              <InfoRow label="Name"    value={viewing.name} />
-              <InfoRow label="Email"   value={viewing.email} />
-              <InfoRow label="Phone"   value={viewing.phone || "—"} />
+              <InfoRow label="Name" value={viewing.name} />
+              <InfoRow label="Email" value={viewing.email} />
+              <InfoRow label="Phone" value={viewing.phone || "—"} />
               <InfoRow label="Subject" value={viewing.subject} />
               <InfoRow
                 label="Received"
@@ -147,9 +175,9 @@ function Btn({
   variant?: "ghost" | "primary" | "danger";
 }) {
   const styles = {
-    ghost:   "text-white/50 hover:text-white border border-white/10 hover:border-white/20 hover:bg-white/5",
+    ghost: "text-white/50 hover:text-white border border-white/10 hover:border-white/20 hover:bg-white/5",
     primary: "text-white bg-white/10 hover:bg-white/15 border border-white/10",
-    danger:  "text-red-400 hover:text-red-300 border border-red-500/15 hover:border-red-500/30 hover:bg-red-500/5",
+    danger: "text-red-400 hover:text-red-300 border border-red-500/15 hover:border-red-500/30 hover:bg-red-500/5",
   };
   return (
     <button
