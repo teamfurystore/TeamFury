@@ -7,7 +7,7 @@ export const SITE_CONFIG = {
     description:
         "Get your dream Valorant account with exclusive skins, rare knives, and premium collections",
     stats: [
-        { label: "1500+ Accounts Available" },
+        { label: "1500+ Accounts Sold" },
         { label: "Instant Delivery" },
         { label: "24/7 Support" },
     ],
