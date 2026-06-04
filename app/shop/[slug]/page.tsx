@@ -4,6 +4,7 @@ import { createServerClient } from "@/utils/supabaseServer";
 import { type DbProduct, type DbProductItem } from "@/features/products/productsSlice";
 import ProductDetailClient from "@/components/shop/ProductDetailClient";
 
+export const dynamic = 'force-dynamic';
 export const dynamicParams = true;
 
 // ── Data fetching ─────────────────────────────────────────────────────────────
@@ -74,17 +75,6 @@ async function getRelated(product: DbProduct): Promise<DbProduct[]> {
   }
 
   return related.map((p) => ({ ...p, product_items: [] }));
-}
-
-// ── Static params ─────────────────────────────────────────────────────────────
-
-export async function generateStaticParams() {
-  const db = createServerClient();
-  const { data } = await db
-    .from("products")
-    .select("slug")
-    .eq("is_active", true);
-  return (data ?? []).map((p) => ({ slug: p.slug as string }));
 }
 
 // ── Metadata ──────────────────────────────────────────────────────────────────
