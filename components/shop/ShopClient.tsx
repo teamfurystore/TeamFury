@@ -43,11 +43,11 @@ export default function ShopClient() {
         if (p.title.toLowerCase().includes(q)) return true;
         if (p.current_rank.toLowerCase().includes(q)) return true;
         if (p.peak_rank.toLowerCase().includes(q)) return true;
+        if (p.slug.toLowerCase().includes(q)) return true;
         if (p.product_items?.some((s) => s.display_name.toLowerCase().includes(q))) return true;
         return false;
       });
     }
-
     // Rank pill filter
     if (filterRank !== "All")
       items = items.filter((p) => p.current_rank === filterRank);
