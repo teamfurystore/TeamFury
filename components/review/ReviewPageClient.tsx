@@ -130,7 +130,7 @@ export default function ReviewPageClient() {
             <p className="text-white/40 text-sm">Help other gamers make the right choice.</p>
           </div>
         </ScrollReveal>
-        <ScrollReveal direction="scale" delay={0.1} duration={0.7}>
+        <ScrollReveal direction="up" delay={0.1} duration={0.7}>
           <WriteReviewForm />
         </ScrollReveal>
       </section>
