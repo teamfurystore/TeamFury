@@ -15,32 +15,28 @@ export default function AdminLoginPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    // Detailed password validation
+
     if (password.length < 8) {
       setError("Password must contain at least 8 characters.");
       setLoading(false);
       return;
     }
-
     if (!/[a-zA-Z]/.test(password)) {
       setError("Password must contain at least 1 alphabet character.");
       setLoading(false);
       return;
     }
-
     if (!/\d/.test(password)) {
       setError("Password must contain at least 1 number.");
       setLoading(false);
       return;
     }
-
     if (!/[!@#$%^&*]/.test(password)) {
-      setError(
-        "Password must contain at least 1 special character (!@#$%^&*)."
-      );
+      setError("Password must contain at least 1 special character (!@#$%^&*).");
       setLoading(false);
       return;
     }
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error || !data.session) {
@@ -69,7 +65,6 @@ export default function AdminLoginPage() {
         {/* Form */}
         <div className="bg-white/4 border border-white/10 rounded-2xl p-6">
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
-
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-white/60">Email address</label>
               <input
@@ -82,7 +77,6 @@ export default function AdminLoginPage() {
                 className={inp}
               />
             </div>
-
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-white/60">Password</label>
               <input
@@ -95,14 +89,12 @@ export default function AdminLoginPage() {
                 className={inp}
               />
             </div>
-
             {error && (
               <div className="flex items-start gap-2 text-xs text-red-400 bg-red-500/8 border border-red-500/20 rounded-lg px-3 py-2.5">
                 <span className="mt-px">⚠</span>
                 <span>{error}</span>
               </div>
             )}
-
             <button
               type="submit"
               disabled={loading}
