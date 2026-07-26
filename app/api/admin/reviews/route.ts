@@ -1,15 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-// ── Supabase client factory ───────────────────────────────────────────────────
-
-function anonClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-}
-
 // ── Auth helper ───────────────────────────────────────────────────────────────
 // Supabase stores the session cookie as sb-<project-ref>-auth-token (a JSON
 // blob) OR as a plain sb-access-token JWT depending on the client version.
@@ -42,10 +33,20 @@ async function requireAdmin(req: Request): Promise<{ ok: boolean }> {
   const token = extractToken(req.headers.get("cookie"));
   if (!token) return { ok: false };
 
-  const { data, error } = await anonClient().auth.getUser(token);
-  if (error || !data.user) return { ok: false };
+  const supabase = dbClient(req);
 
-  return { ok: true };
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) return { ok: false };
+
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", userData.user.id)
+    .single();
+
+  if (profileError || !profile) return { ok: false };
+
+  return { ok: profile.role === "admin" };
 }
 
 // ── DB client — anon key is fine; RLS allows authenticated users ──────────────
