@@ -30,7 +30,7 @@ async function getAuthedClient(req: Request) {
   const token = getToken(req);
   if (!token) return null;
 
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!, {
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.VITE_SUPABASE_SERVICE_ROLE_KEY!, {
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
 }
