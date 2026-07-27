@@ -8,3 +8,6 @@ export function serviceClient() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 }
+
+// Alias used by server components (e.g. app/shop/[slug]/page.tsx)
+export const createServerClient = serviceClient;
