@@ -1,11 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 
-// Server-only client — never import this in client components
-// SUPABASE_SERVICE_ROLE_KEY has no NEXT_PUBLIC_ prefix so it's never exposed to the browser
+// Server-side anon client for public data reads (shop pages, metadata, etc.)
+// Uses the public anon key — RLS policies on Supabase control row visibility.
+// No service role key — never bypasses RLS.
 export function serviceClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 }
 

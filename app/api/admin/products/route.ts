@@ -1,137 +1,8 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-// ── Auth (same pattern as admin/reviews) ─────────────────────────────────────
-
-function anonClient() {
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-}
-
-function extractToken(cookieHeader: string | null): string | null {
-  if (!cookieHeader) return null;
-  const plain = cookieHeader.match(/sb-access-token=([^;]+)/)?.[1];
-  if (plain) return plain;
-  const jsonRaw = cookieHeader.match(/sb-[^=]+-auth-token=([^;]+)/)?.[1];
-  if (jsonRaw) {
-    try {
-      const decoded = decodeURIComponent(jsonRaw);
-      const parsed = JSON.parse(decoded);
-      const session = Array.isArray(parsed) ? parsed[0] : parsed;
-      return session?.access_token ?? null;
-    } catch {
-      return null;
-    }
-  }
-  return null;
-}
-
-function dbClient(req: Request) {
-  const token = extractToken(req.headers.get("cookie"));
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    token ? { global: { headers: { Authorization: `Bearer ${token}` } } } : {},
-  );
-}
-
-// async function requireAdmin(req: Request): Promise<{ ok: boolean }> {
-//   const token = extractToken(req.headers.get("cookie"));
-//   if (!token) return { ok: false };
-
-//   const { data, error } = await anonClient().auth.getUser(token);
-//   if (error || !data.user) return { ok: false };
-//   return { ok: true };
-// }
-
-async function requireAdmin(req: Request): Promise<{ ok: boolean }> {
-  const token = extractToken(req.headers.get("cookie"));
-  if (!token) return { ok: false };
-
-  // Reuse dbClient instead of duplicating createClient
-  const supabase = dbClient(req);
-
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError || !userData.user) return { ok: false };
-
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", userData.user.id)
-    .single();
-
-  if (profileError || !profile) return { ok: false };
-
-  return { ok: profile.role === "admin" };
-}
+import { requireAdmin, dbClient } from "@/utils/adminAuth";
 // ── PUT /api/admin/products ───────────────────────────────────────────────────
 // Full update of a product (edit form). Accepts multipart/form-data with
 // optional file upload. Image is converted to WebP 1080px max, quality 82.
-
-// export async function PUT(req: Request) {
-//   const { ok } = await requireAdmin(req);
-//   if (!ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-//   try {
-//     const formData = await req.formData();
-//     const file = formData.get("file") as File | null;
-//     const raw = formData.get("data")?.toString();
-//     if (!raw) return NextResponse.json({ error: "Missing data" }, { status: 400 });
-
-//     const payload = JSON.parse(raw);
-//     const { id, ...fields } = payload;
-//     if (!id) return NextResponse.json({ error: "Missing product id" }, { status: 400 });
-
-//     let imageUrl: string | undefined = fields.image;
-
-//     if (file) {
-//       // Convert to WebP, resize to max 1080px wide, quality 82
-//       const rawBuf = Buffer.from(await file.arrayBuffer());
-//       const buffer = await (await import("sharp"))
-//         .default(rawBuf)
-//         .resize({ width: 1080, withoutEnlargement: true })
-//         .webp({ quality: 82 })
-//         .toBuffer();
-//       const fileName = `products/${fields.slug || id}-${Date.now()}.webp`;
-
-//       const { supabase: storageClient } = await import("@/utils/supabaseClient");
-//       const { error: uploadError } = await storageClient.storage
-//         .from("Thumbnails")
-//         .upload(fileName, buffer, { contentType: "image/webp" });
-//       if (uploadError) throw uploadError;
-
-//       const { data: urlData } = storageClient.storage.from("Thumbnails").getPublicUrl(fileName);
-//       imageUrl = urlData.publicUrl;
-//     }
-
-//     const updatePayload = {
-//       title: fields.title,
-//       slug: fields.slug,
-//       price: fields.price ?? 0,
-//       discounted_price: fields.discounted_price ?? 0,
-//       current_rank: fields.current_rank ?? null,
-//       peak_rank: fields.peak_rank ?? null,
-//       skins: fields.skins ?? 0,
-//       knives: fields.knives ?? 0,
-//       battle_passes: fields.battle_passes ?? 0,
-//       region: fields.region ?? null,
-//       level: fields.level ?? 0,
-//       badge: fields.badge || null,
-//       image: imageUrl,
-//       description: fields.description ?? null,
-//       verified: fields.verified ?? false,
-//       instant_delivery: fields.instant_delivery ?? false,
-//       profile_url: fields.profile_url ?? null,
-//     };
-
-//     const { supabase: db } = await import("@/utils/supabaseClient");
-//     const { data, error } = await db.from("products").update(updatePayload).eq("id", id).select().single();
-
-//     if (error) throw error;
-//     return NextResponse.json({ success: true, data });
-//   } catch (err) {
-//     console.error("PUT /api/admin/products error:", err);
-//     return NextResponse.json({ error: "Failed to update product" }, { status: 500 });
-//   }
-// }
 
 export async function PUT(req: Request) {
   const { ok } = await requireAdmin(req);
@@ -290,7 +161,7 @@ export async function DELETE(req: Request) {
       if (filePath) {
         console.log("🗑 Deleting image:", filePath);
 
-        const { supabase: storageClient } = await import("@/utils/supabaseClient");
+        const storageClient = dbClient(req);
         const { data, error } = await storageClient.storage.from("Thumbnails").remove([filePath]);
 
         console.log("📦 Supabase delete response:", data);

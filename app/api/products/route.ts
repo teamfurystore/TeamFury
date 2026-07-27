@@ -1,4 +1,4 @@
-import { supabase } from "@/utils/supabaseClient";
+import { extractToken } from "@/utils/adminAuth";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import sharp from "sharp";
@@ -6,33 +6,15 @@ import sharp from "sharp";
 // Give sharp enough time to process large images
 export const maxDuration = 30;
 
-function getToken(req: Request) {
-  const cookieHeader = req.headers.get("cookie");
-  if (!cookieHeader) return null;
-
-  const accessToken = cookieHeader.match(/sb-access-token=([^;]+)/)?.[1];
-  if (accessToken) return accessToken;
-
-  const jsonRaw = cookieHeader.match(/sb-[^=]+-auth-token=([^;]+)/)?.[1];
-  if (!jsonRaw) return null;
-
-  try {
-    const decoded = decodeURIComponent(jsonRaw);
-    const parsed = JSON.parse(decoded);
-    const session = Array.isArray(parsed) ? parsed[0] : parsed;
-    return session?.access_token ?? null;
-  } catch {
-    return null;
-  }
-}
-
-async function getAuthedClient(req: Request) {
-  const token = getToken(req);
+function getAuthedClient(req: Request) {
+  const token = extractToken(req.headers.get("cookie"));
   if (!token) return null;
 
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-  });
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { global: { headers: { Authorization: `Bearer ${token}` } } }
+  );
 }
 
 // ── Image processing ──────────────────────────────────────────────────────────
@@ -55,7 +37,7 @@ function errorMessage(err: unknown): string {
 
 export async function PATCH(req: Request) {
   try {
-    const authClient = await getAuthedClient(req);
+    const authClient = getAuthedClient(req);
     if (!authClient) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
@@ -89,23 +71,24 @@ export async function POST(req: Request) {
 
     let imageUrl = existingImageUrl;
 
+    // Get the authenticated client early so it's used for both storage and DB
+    const authClient = getAuthedClient(req);
+    if (!authClient) {
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+    }
+
     if (file) {
       const { buffer, fileName } = await processImage(file);
 
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError } = await authClient.storage
         .from("Thumbnails")
         .upload(fileName, buffer, { contentType: "image/webp", upsert: false });
 
       if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`);
 
-      const { data: urlData } = supabase.storage.from("Thumbnails").getPublicUrl(fileName);
+      const { data: urlData } = authClient.storage.from("Thumbnails").getPublicUrl(fileName);
 
       imageUrl = urlData.publicUrl;
-    }
-
-    const authClient = await getAuthedClient(req);
-    if (!authClient) {
-      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
     const { data: userData, error: userError } = await authClient.auth.getUser();
