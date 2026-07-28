@@ -18,10 +18,10 @@ interface Props {
 }
 
 const FROM: Record<Direction, gsap.TweenVars> = {
-  up:    { y: 60,  opacity: 0, filter: "blur(6px)" },
-  down:  { y: -60, opacity: 0, filter: "blur(6px)" },
-  left:  { x: -70, opacity: 0, filter: "blur(6px)" },
-  right: { x: 70,  opacity: 0, filter: "blur(6px)" },
+  up: { y: 60, opacity: 0, filter: "blur(6px)" },
+  down: { y: -60, opacity: 0, filter: "blur(6px)" },
+  left: { x: -70, opacity: 0, filter: "blur(6px)" },
+  right: { x: 70, opacity: 0, filter: "blur(6px)" },
   scale: { scale: 0.82, opacity: 0, filter: "blur(6px)" },
 };
 
@@ -49,7 +49,7 @@ export default function ScrollReveal({
       scrollTrigger: {
         trigger: el,
         start: threshold,
-        toggleActions: "play reverse play reverse",
+        toggleActions: "play none none none",
       },
     };
 

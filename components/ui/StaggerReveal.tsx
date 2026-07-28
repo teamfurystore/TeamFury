@@ -44,7 +44,7 @@ export default function StaggerReveal({
       scrollTrigger: {
         trigger: el,
         start: threshold,
-        toggleActions: "play reverse play reverse",
+        toggleActions: "play none none none",
       },
     });
 
