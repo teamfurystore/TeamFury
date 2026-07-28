@@ -34,7 +34,7 @@ export default function ProductCard({ product }: Props) {
   return (
     <div className="group relative bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-white/20 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/30 flex flex-col">
       <Link
-        href={`/shop/${product.slug}`}>
+        href={`/shop/${product.slug.trim()}`}>
         {/* Image */}
         <div className="relative aspect-video bg-linear-to-br from-red-900/20 to-zinc-900 overflow-hidden">
           {product.image ? (
