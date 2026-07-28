@@ -84,10 +84,32 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { slug } = await props.params;
   const product = await getProduct(slug);
-  if (!product) return { title: "Not Found | TEAM FURY" };
+  if (!product) return { title: "Not Found" };
+
+  const title = `${product.title} | TEAM FURY`;
+  const description =
+    product.description ||
+    `Buy ${product.title} — ${product.skins ?? 0} skins, ${product.knives ?? 0} knives. Verified Valorant account with instant delivery.`;
+  const image = product.image ?? "/tf_logo_hd.jpg";
+  const url = `https://www.teamfury.store/shop/${slug}`;
+
   return {
-    title: `${product.title} | TEAM FURY`,
-    description: product.description,
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      images: [{ url: image, width: 1200, height: 630, alt: product.title }],
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
+    },
   };
 }
 
@@ -102,5 +124,32 @@ export default async function ProductDetailPage(
 
   const related = await getRelated(product);
 
-  return <ProductDetailClient product={product} related={related} />;
+  const productSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.title,
+    description:
+      product.description ||
+      `Premium Valorant account — ${product.skins ?? 0} skins, ${product.knives ?? 0} knives.`,
+    image: product.image ?? "https://www.teamfury.store/tf_logo_hd.jpg",
+    url: `https://www.teamfury.store/shop/${slug}`,
+    brand: { "@type": "Brand", name: "TEAM FURY" },
+    offers: {
+      "@type": "Offer",
+      priceCurrency: "INR",
+      price: product.discounted_price ?? product.price,
+      availability: "https://schema.org/InStock",
+      seller: { "@type": "Organization", name: "TEAM FURY" },
+    },
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+      />
+      <ProductDetailClient product={product} related={related} />
+    </>
+  );
 }

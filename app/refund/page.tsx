@@ -2,9 +2,13 @@ import type { Metadata } from "next";
 import RefundPageClient from "@/components/refund/RefundPageClient";
 
 export const metadata: Metadata = {
-    title: "Refund Policy | TEAM FURY",
+    title: "Refund Policy",
     description:
-        "Read the Refund Policy for TeamFury Store — India's trusted Valorant account marketplace.",
+        "Read TEAM FURY's Refund Policy — our commitment to fair refunds for Valorant account purchases.",
+    alternates: {
+        canonical: "https://www.teamfury.store/refund",
+    },
+    robots: { index: false, follow: true },
 };
 
 export default function RefundPage() {
