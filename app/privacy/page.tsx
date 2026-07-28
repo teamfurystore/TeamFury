@@ -2,9 +2,13 @@ import type { Metadata } from "next";
 import PrivacyPageClient from "@/components/privacy/PrivacyPageClient";
 
 export const metadata: Metadata = {
-  title: "Privacy | TEAM FURY",
+  title: "Privacy Policy",
   description:
-    "See what 1500+ happy buyers say about TEAM FURY — India's most trusted Valorant account marketplace.",
+    "Read TEAM FURY's Privacy Policy — how we collect, use, and protect your data when you purchase Valorant accounts.",
+  alternates: {
+    canonical: "https://www.teamfury.store/privacy",
+  },
+  robots: { index: false, follow: true },
 };
 
 export default function PrivacyPage() {
