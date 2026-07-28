@@ -19,7 +19,7 @@ async function getProduct(slug: string): Promise<DbProduct | null> {
       "current_rank, peak_rank, skins, knives, battle_passes, region, level, " +
       "verified, instant_delivery, description, created_at"
     )
-    .eq("slug", slug)
+    .eq("slug", slug.trim())
     .eq("is_active", true)
     .single();
 
