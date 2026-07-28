@@ -66,6 +66,6 @@ export default function robots(): MetadataRoute.Robots {
       },
     ],
 
-    sitemap: FURY_VALORANT,
+    sitemap: `${FURY_VALORANT}/sitemap.xml`,
   };
 }
